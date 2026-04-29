@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(node --check server/config.mjs)",
+      "Bash(node --check server/db/client.mjs)",
+      "Bash(node --check server/middleware/auth.mjs)",
+      "Bash(node --check server/services/llm.mjs)",
+      "Bash(node --check server/services/evolution.mjs)",
+      "Bash(node --check src/api/client.js)"
+    ]
+  }
+}
