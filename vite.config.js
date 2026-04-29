@@ -5,10 +5,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api/llm": {
-        target: "http://localhost:1234/v1",
+      // All /api/* → Fastify backend (port 3001)
+      // The backend handles LLM calls internally via the CORS bridge.
+      "/api": {
+        target: "http://localhost:3001",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/llm/, ""),
       },
     },
   },
