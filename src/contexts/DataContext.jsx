@@ -1,10 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import {
-  DEMO_CONVERSATIONS,
-  DEMO_INVENTORY,
-} from '../lib/mockData';
-
 // ── Demo Mode Toggle (must match AuthContext) ───────────────────────────────
 const DEMO_MODE = true;
 
@@ -29,8 +24,8 @@ const DemoDataProvider = ({ children }) => {
 
     // Simulate network latency
     const timer = setTimeout(() => {
-      setConversations([...DEMO_CONVERSATIONS]);
-      setInventory([...DEMO_INVENTORY]);
+      setConversations([]);
+      setInventory([]);
       setLoading(false);
     }, 400);
 
@@ -56,8 +51,8 @@ const DemoDataProvider = ({ children }) => {
   };
 
   const refreshData = () => {
-    setConversations([...DEMO_CONVERSATIONS]);
-    setInventory([...DEMO_INVENTORY]);
+    setConversations([]);
+    setInventory([]);
   };
 
   return (
@@ -152,6 +147,7 @@ const SupabaseDataProvider = ({ children }) => {
       // Transform data to match the UI expectation
       const transformedConvs = convData.map(c => ({
         id: c.id,
+        tenant_id: c.tenant_id,
         customerName: c.contacts.name,
         platform: c.platform,
         tags: c.tags,
@@ -183,6 +179,7 @@ const SupabaseDataProvider = ({ children }) => {
       
       setInventory(invData.map(i => ({
         id: i.sku,
+        tenant_id: i.tenant_id,
         item: i.name,
         stock: i.stock,
         price: i.price

@@ -10,6 +10,7 @@ import Inventory from './pages/Inventory';
 import AdminConfig from './pages/AdminConfig';
 import UserManagement from './pages/UserManagement';
 import VendorDashboard from './pages/vendor/VendorDashboard';
+import Orders from './pages/Orders';
 
 const RootRedirect = () => {
   const { profile, loading } = useAuth();
@@ -50,6 +51,11 @@ function App() {
                 <Route path="users" element={
                   <ProtectedRoute requiredRole="admin">
                     <UserManagement />
+                  </ProtectedRoute>
+                } />
+                <Route path="orders" element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Orders />
                   </ProtectedRoute>
                 } />
                 <Route index element={<Navigate to="config" replace />} />
