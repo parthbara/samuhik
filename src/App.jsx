@@ -67,6 +67,7 @@ function App() {
                   <VendorDashboard />
                 </ProtectedRoute>
               } />
+
             </Route>
 
             <Route path="/" element={<RootRedirect />} />

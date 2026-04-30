@@ -114,14 +114,11 @@ const Inbox = () => {
         onTenantFilterChange={setTenantFilter}
       />
       
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <ChatWindow 
-          conversation={activeConversation}
-          onHumanReply={handleHumanReply}
-          onTakeOver={handleTakeOver}
-        />
-        <RecentOrdersPanel />
-      </div>
+      <ChatWindow 
+        conversation={activeConversation}
+        onHumanReply={handleHumanReply}
+        onTakeOver={handleTakeOver}
+      />
       
       <ContextPanel 
         conversation={activeConversation}
