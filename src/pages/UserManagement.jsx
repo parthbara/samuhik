@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ALL_USERS_WITH_TENANTS, ALL_TENANTS, DEMO_USERS } from '../lib/mockData';
 import { UserPlus, Trash2, Shield, User, X, Search, Building2 } from 'lucide-react';
+
+const DEMO_MODE = true;
 
 const UserManagement = () => {
   const { profile } = useAuth();
@@ -25,6 +27,20 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+
+    if (DEMO_MODE) {
+      await new Promise(r => setTimeout(r, 200));
+      if (profile.role === 'super_admin') {
+        setUsers([...ALL_USERS_WITH_TENANTS]);
+      } else {
+        setUsers(ALL_USERS_WITH_TENANTS.filter(u => u.tenant_id === profile.tenant_id));
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Real Supabase path
+    const { supabase } = await import('../lib/supabase');
     let query = supabase.from('users').select('*, tenants(name)');
     
     if (profile.role !== 'super_admin') {
@@ -38,18 +54,39 @@ const UserManagement = () => {
   };
 
   const fetchTenants = async () => {
+    if (DEMO_MODE) {
+      setTenants(ALL_TENANTS.map(t => ({ id: t.id, name: t.name })));
+      return;
+    }
+
+    const { supabase } = await import('../lib/supabase');
     const { data } = await supabase.from('tenants').select('id, name');
     setTenants(data || []);
   };
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    
-    // In a real app, you would use supabase.auth.admin.inviteUserByEmail 
-    // but that requires a service role key which we shouldn't have in the frontend.
-    // For this demo/setup, we'll just insert into the 'users' table.
-    // The user would then need to sign up or be invited via the Supabase dashboard.
-    
+
+    if (DEMO_MODE) {
+      const newUser = {
+        id: 'user-' + Date.now(),
+        supabase_uid: 'uid-' + Date.now(),
+        email: newEmail,
+        name: newName,
+        role: newRole,
+        tenant_id: newTenantId || profile.tenant_id,
+        tenants: tenants.find(t => t.id === (newTenantId || profile.tenant_id)) || null,
+        created_at: new Date().toISOString(),
+      };
+      setUsers(prev => [newUser, ...prev]);
+      setShowAddModal(false);
+      setNewEmail('');
+      setNewName('');
+      return;
+    }
+
+    // Real Supabase path
+    const { supabase } = await import('../lib/supabase');
     const { error } = await supabase.from('users').insert({
       email: newEmail,
       name: newName,
@@ -69,6 +106,13 @@ const UserManagement = () => {
 
   const handleRemove = async (id) => {
     if (!confirm('Are you sure you want to remove this member?')) return;
+
+    if (DEMO_MODE) {
+      setUsers(prev => prev.filter(u => u.id !== id));
+      return;
+    }
+
+    const { supabase } = await import('../lib/supabase');
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) alert('Error removing user: ' + error.message);
     else fetchUsers();

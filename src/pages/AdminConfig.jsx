@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Globe, Key, Save, AlertCircle, Building2 } from 'lucide-react';
+
+const DEMO_MODE = true;
 
 const AdminConfig = () => {
   const { profile } = useAuth();
@@ -26,6 +27,16 @@ const AdminConfig = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (DEMO_MODE) {
+      // In demo mode just show success feedback
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+      return;
+    }
+
+    // Real Supabase path
+    const { supabase } = await import('../lib/supabase');
     const { error } = await supabase
       .from('tenants')
       .update({

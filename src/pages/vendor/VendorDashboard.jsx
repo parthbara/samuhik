@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { ALL_TENANTS } from '../../lib/mockData';
 import { 
   Building2, 
   Plus, 
@@ -10,6 +10,8 @@ import {
   MoreVertical,
   Key
 } from 'lucide-react';
+
+const DEMO_MODE = true;
 
 const VendorDashboard = () => {
   const [tenants, setTenants] = useState([]);
@@ -23,6 +25,16 @@ const VendorDashboard = () => {
 
   const fetchTenants = async () => {
     setLoading(true);
+
+    if (DEMO_MODE) {
+      await new Promise(r => setTimeout(r, 300));
+      setTenants([...ALL_TENANTS]);
+      setLoading(false);
+      return;
+    }
+
+    // Real Supabase path
+    const { supabase } = await import('../../lib/supabase');
     const { data, error } = await supabase
       .from('tenants')
       .select('*, users(count)')
@@ -38,7 +50,27 @@ const VendorDashboard = () => {
 
   const handleCreateTenant = async (e) => {
     e.preventDefault();
-    // Generate a placeholder API key hash for now
+
+    if (DEMO_MODE) {
+      // Add locally in demo mode
+      const newTenant = {
+        id: 'tenant-' + Date.now(),
+        name: newTenantName,
+        evolution_api_url: '',
+        evolution_api_key: '',
+        evolution_instance: '',
+        api_key_hash: 'demo_' + Math.random().toString(36).substring(7),
+        created_at: new Date().toISOString(),
+        users: [{ count: 0 }],
+      };
+      setTenants(prev => [newTenant, ...prev]);
+      setShowAddModal(false);
+      setNewTenantName('');
+      return;
+    }
+
+    // Real Supabase path
+    const { supabase } = await import('../../lib/supabase');
     const dummyHash = 'dummy_' + Math.random().toString(36).substring(7);
     
     const { data, error } = await supabase
