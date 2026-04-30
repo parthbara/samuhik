@@ -1,15 +1,15 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { 
-  Inbox, 
-  Settings, 
-  Users, 
-  LogOut, 
+import {
+  Inbox,
+  Settings,
+  Users,
+  LogOut,
   Bot,
   Shield,
   LayoutDashboard,
-  FileSpreadsheet
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -17,7 +17,7 @@ const Sidebar = () => {
 
   const navItems = [
     { to: '/vendor', icon: LayoutDashboard, label: 'Platform', superOnly: true },
-    { to: '/inbox', icon: Inbox, label: 'Inbox', hideForSuper: false },
+    { to: '/inbox', icon: Inbox, label: 'Inbox' },
     { to: '/inventory', icon: Shield, label: 'Inventory', adminOnly: true },
     { to: '/admin/orders', icon: FileSpreadsheet, label: 'Orders', adminOnly: true },
     { to: '/admin/config', icon: Settings, label: 'Settings', adminOnly: true },
@@ -39,7 +39,7 @@ const Sidebar = () => {
         {navItems.map((item) => {
           if (item.superOnly && profile.role !== 'super_admin') return null;
           if (item.adminOnly && profile.role !== 'admin' && profile.role !== 'super_admin') return null;
-          
+
           return (
             <NavLink
               key={item.to}
