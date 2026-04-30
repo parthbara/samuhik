@@ -1,10 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import {
+  DEMO_CONVERSATIONS,
+  DEMO_INVENTORY,
+} from '../lib/mockData';
+
+// ── Demo Mode Toggle (must match AuthContext) ───────────────────────────────
+const DEMO_MODE = true;
 
 const DataContext = createContext();
 
-export const DataProvider = ({ children }) => {
+// ═══════════════════════════════════════════════════════════════════════════
+//  DEMO DATA PROVIDER — uses in-memory mock data
+// ═══════════════════════════════════════════════════════════════════════════
+const DemoDataProvider = ({ children }) => {
   const { profile } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [inventory, setInventory] = useState([]);
@@ -14,11 +23,83 @@ export const DataProvider = ({ children }) => {
     if (!profile) {
       setConversations([]);
       setInventory([]);
+      setLoading(false);
+      return;
+    }
+
+    // Simulate network latency
+    const timer = setTimeout(() => {
+      setConversations([...DEMO_CONVERSATIONS]);
+      setInventory([...DEMO_INVENTORY]);
+      setLoading(false);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [profile]);
+
+  const addMessage = async (chatId, message) => {
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === chatId
+          ? { ...c, messages: [...c.messages, message], time: message.time }
+          : c
+      )
+    );
+  };
+
+  const updateConversation = async (chatId, updates) => {
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === chatId ? { ...c, ...updates } : c
+      )
+    );
+  };
+
+  const refreshData = () => {
+    setConversations([...DEMO_CONVERSATIONS]);
+    setInventory([...DEMO_INVENTORY]);
+  };
+
+  return (
+    <DataContext.Provider
+      value={{
+        conversations,
+        inventory,
+        loading,
+        addMessage,
+        updateConversation,
+        refreshData,
+      }}
+    >
+      {children}
+    </DataContext.Provider>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SUPABASE DATA PROVIDER — real Supabase queries (for production)
+// ═══════════════════════════════════════════════════════════════════════════
+const SupabaseDataProvider = ({ children }) => {
+  const { profile } = useAuth();
+  const [conversations, setConversations] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [supabaseModule, setSupabaseModule] = useState(null);
+
+  useEffect(() => {
+    import('../lib/supabase').then(mod => setSupabaseModule(mod));
+  }, []);
+
+  useEffect(() => {
+    if (!profile || !supabaseModule) {
+      setConversations([]);
+      setInventory([]);
       return;
     }
 
     fetchInitialData();
 
+    const { supabase } = supabaseModule;
     // Set up Realtime subscriptions
     const convSubscription = supabase
       .channel('conversations-changes')
@@ -30,8 +111,8 @@ export const DataProvider = ({ children }) => {
           table: 'conversations',
           filter: profile.role === 'super_admin' ? undefined : `tenant_id=eq.${profile.tenant_id}`
         },
-        (payload) => {
-          handleConversationChange(payload);
+        () => {
+          fetchInitialData();
         }
       )
       .subscribe();
@@ -39,9 +120,11 @@ export const DataProvider = ({ children }) => {
     return () => {
       supabase.removeChannel(convSubscription);
     };
-  }, [profile]);
+  }, [profile, supabaseModule]);
 
   const fetchInitialData = async () => {
+    if (!supabaseModule) return;
+    const { supabase } = supabaseModule;
     setLoading(true);
     try {
       const tenantId = profile.tenant_id;
@@ -112,13 +195,9 @@ export const DataProvider = ({ children }) => {
     }
   };
 
-  const handleConversationChange = async (payload) => {
-    // For simplicity, refetch or update state
-    // Real production apps should update the specific item in state
-    fetchInitialData(); 
-  };
-
   const addMessage = async (chatId, message) => {
+    if (!supabaseModule) return;
+    const { supabase } = supabaseModule;
     // In live mode, we insert into Supabase
     const { error } = await supabase
       .from('messages')
@@ -140,6 +219,8 @@ export const DataProvider = ({ children }) => {
   };
 
   const updateConversation = async (chatId, updates) => {
+    if (!supabaseModule) return;
+    const { supabase } = supabaseModule;
     // Map UI updates back to DB columns
     const dbUpdates = {};
     if (updates.unread !== undefined) dbUpdates.unread_count = updates.unread;
@@ -166,6 +247,16 @@ export const DataProvider = ({ children }) => {
       {children}
     </DataContext.Provider>
   );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Exported Provider — auto-selects demo vs real
+// ═══════════════════════════════════════════════════════════════════════════
+export const DataProvider = ({ children }) => {
+  if (DEMO_MODE) {
+    return <DemoDataProvider>{children}</DemoDataProvider>;
+  }
+  return <SupabaseDataProvider>{children}</SupabaseDataProvider>;
 };
 
 export const useData = () => useContext(DataContext);
