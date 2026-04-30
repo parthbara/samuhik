@@ -56,12 +56,24 @@ const QueueItem = ({ conversation, active, onSelect }) => {
   );
 };
 
-const ChatQueue = ({ conversations, activeChatId, onSelect, platformFilter, onPlatformFilterChange }) => {
+const ChatQueue = ({
+  conversations,
+  activeChatId,
+  onSelect,
+  platformFilter,
+  onPlatformFilterChange,
+  tenants = [],
+  tenantFilter = 'all',
+  onTenantFilterChange,
+}) => {
   const waitingCount = conversations.filter((conversation) => !conversation.aiEnabled || conversation.tags.includes("Needs Human")).length;
   
-  const filteredConversations = platformFilter === "all"
-    ? conversations
-    : conversations.filter((c) => c.platform === platformFilter);
+  const filteredConversations = conversations.filter((conversation) => {
+    const matchesPlatform = platformFilter === "all" || conversation.platform === platformFilter;
+    const conversationTenant = conversation.tenant_id || conversation.tenantId;
+    const matchesTenant = tenantFilter === "all" || conversationTenant === tenantFilter;
+    return matchesPlatform && matchesTenant;
+  });
 
   return (
     <aside className="flex h-full w-80 flex-col border-r border-slate-200 bg-white">
@@ -91,6 +103,19 @@ const ChatQueue = ({ conversations, activeChatId, onSelect, platformFilter, onPl
           <option value="instagram">Instagram</option>
           <option value="messenger">Messenger</option>
         </select>
+
+        {tenants.length > 0 && (
+          <select
+            value={tenantFilter}
+            onChange={(event) => onTenantFilterChange?.(event.target.value)}
+            className="mt-3 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+          >
+            <option value="all">All tenants</option>
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
+            ))}
+          </select>
+        )}
       </header>
 
       <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
@@ -111,7 +136,7 @@ const ChatQueue = ({ conversations, activeChatId, onSelect, platformFilter, onPl
         ))}
         {filteredConversations.length === 0 && (
           <div className="p-8 text-center text-sm text-slate-400">
-            No active chats.
+            No active conversations.
           </div>
         )}
       </div>

@@ -1,152 +1,301 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Globe, Key, Save, AlertCircle, Building2 } from 'lucide-react';
+import {
+  AlertCircle,
+  Bot,
+  Building2,
+  Camera,
+  CheckCircle2,
+  Clock3,
+  MessageCircle,
+  MessageSquareText,
+  Music2,
+  Plug,
+  RefreshCw,
+  Route,
+  ShieldCheck,
+} from 'lucide-react';
+import SectionCard from '../components/settings/SectionCard';
+import ToggleSwitch from '../components/settings/ToggleSwitch';
+
+const CHANNELS = [
+  {
+    id: 'whatsapp',
+    label: 'WhatsApp',
+    icon: MessageCircle,
+    tone: 'emerald',
+    accent: 'border-emerald-200 bg-emerald-50/50',
+    copy: 'Primary channel for Nepali retail and wholesale buyers.',
+    placeholder: 'https://remote-server.example.com/webhooks/whatsapp',
+  },
+  {
+    id: 'instagram',
+    label: 'Instagram',
+    icon: Camera,
+    tone: 'rose',
+    accent: 'border-rose-200 bg-rose-50/50',
+    copy: 'Capture product inquiries, story replies, and catalogue DMs.',
+    placeholder: 'https://remote-server.example.com/webhooks/instagram',
+  },
+  {
+    id: 'messenger',
+    label: 'Messenger',
+    icon: MessageSquareText,
+    tone: 'blue',
+    accent: 'border-blue-200 bg-blue-50/50',
+    copy: 'Unify Facebook page messages and follow-up support.',
+    placeholder: 'https://remote-server.example.com/webhooks/messenger',
+  },
+  {
+    id: 'tiktok',
+    label: 'TikTok',
+    icon: Music2,
+    tone: 'slate',
+    accent: 'border-slate-200 bg-slate-50',
+    copy: 'Prepare for TikTok Shop comments, leads, and creator messages.',
+    placeholder: 'https://remote-server.example.com/webhooks/tiktok',
+  },
+];
+
+const makeInitialChannelState = () =>
+  CHANNELS.reduce((state, channel) => ({
+    ...state,
+    [channel.id]: {
+      enabled: channel.id === 'whatsapp',
+      webhookUrl: '',
+      connected: false,
+    },
+  }), {});
 
 const AdminConfig = () => {
   const { profile } = useAuth();
-  const [formData, setFormData] = useState({
-    evolutionApiUrl: '',
-    evolutionApiKey: '',
-    evolutionInstance: ''
+  const [channelState, setChannelState] = useState(makeInitialChannelState);
+  const [posEndpoint, setPosEndpoint] = useState('');
+  const [posSyncState, setPosSyncState] = useState('idle');
+  const [routingRules, setRoutingRules] = useState({
+    aiFirst: true,
+    routeAngryCustomers: true,
+    businessHoursOnly: false,
+    autoCreateTicket: true,
   });
-  const [isSaved, setIsSaved] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (profile?.tenants) {
-      setFormData({
-        evolutionApiUrl: profile.tenants.evolution_api_url || '',
-        evolutionApiKey: profile.tenants.evolution_api_key || '',
-        evolutionInstance: profile.tenants.evolution_instance || ''
-      });
-      setLoading(false);
-    }
-  }, [profile]);
+  const connectedCount = useMemo(
+    () => Object.values(channelState).filter((channel) => channel.connected).length,
+    [channelState]
+  );
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase
-      .from('tenants')
-      .update({
-        evolution_api_url: formData.evolutionApiUrl,
-        evolution_api_key: formData.evolutionApiKey,
-        evolution_instance: formData.evolutionInstance
-      })
-      .eq('id', profile.tenant_id);
-
-    if (error) {
-      alert('Error saving settings: ' + error.message);
-    } else {
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
-    }
+  const updateChannel = (channelId, updates) => {
+    setChannelState((current) => ({
+      ...current,
+      [channelId]: {
+        ...current[channelId],
+        ...updates,
+      },
+    }));
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const connectChannel = (channelId) => {
+    const channel = channelState[channelId];
+    updateChannel(channelId, {
+      connected: Boolean(channel.webhookUrl.trim()),
+      enabled: true,
+    });
   };
 
-  if (loading) return <div className="p-8">Loading settings...</div>;
+  const syncInventory = () => {
+    setPosSyncState('syncing');
+    setTimeout(() => setPosSyncState('synced'), 900);
+  };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-900">Store Configuration</h2>
-        <p className="text-slate-500 text-sm mt-1">Manage your WhatsApp integration and store identity.</p>
-      </div>
-
-      <div className="bg-indigo-600 rounded-2xl p-6 mb-8 text-white shadow-xl shadow-indigo-100 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="bg-white/20 p-3 rounded-xl backdrop-blur-md">
-            <Building2 className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold">{profile.tenants?.name}</h3>
-            <p className="text-indigo-100 text-sm opacity-80">Tenant ID: {profile.tenant_id}</p>
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Store Admin</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-900">Omnichannel Settings</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Connect customer channels, control AI routing, and sync stock from PasalOS or a custom POS.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{profile?.tenants?.name || 'Store workspace'}</p>
+              <p className="text-xs text-slate-500">Tenant ID: {profile?.tenant_id || 'not assigned'}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Evolution API Settings */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-            <Globe className="w-5 h-5 text-emerald-600" />
-            <h3 className="font-bold text-slate-900 text-sm uppercase tracking-wider">WhatsApp Integration (Evolution API)</h3>
+      <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Connected Channels</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{connectedCount}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">AI Routing</p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">{routingRules.aiFirst ? 'On' : 'Off'}</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">POS Sync</p>
+          <p className="mt-2 text-3xl font-bold text-amber-600">{posSyncState === 'synced' ? 'Ready' : 'Draft'}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        <SectionCard icon={Plug} title="Channel Connections" eyebrow="Inbox inputs" tone="indigo">
+          <div className="grid gap-4 xl:grid-cols-2">
+            {CHANNELS.map((channel) => {
+              const Icon = channel.icon;
+              const state = channelState[channel.id];
+
+              return (
+                <article key={channel.id} className={`rounded-2xl border p-4 ${channel.accent}`}>
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-800 shadow-sm">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{channel.label}</h4>
+                        <p className="mt-1 text-xs leading-5 text-slate-600">{channel.copy}</p>
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      checked={state.enabled}
+                      onChange={(checked) => updateChannel(channel.id, { enabled: checked })}
+                    />
+                  </div>
+                  <label className="block">
+                    <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Incoming Webhook URL
+                    </span>
+                    <input
+                      type="url"
+                      value={state.webhookUrl}
+                      onChange={(event) => updateChannel(channel.id, { webhookUrl: event.target.value, connected: false })}
+                      className="w-full rounded-xl border border-white/80 bg-white px-4 py-2.5 font-mono text-sm text-slate-800 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                      placeholder={channel.placeholder}
+                    />
+                  </label>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                      state.connected ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-500 ring-1 ring-slate-200'
+                    }`}>
+                      {state.connected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}
+                      {state.connected ? 'Connected' : 'Not connected'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => connectChannel(channel.id)}
+                      disabled={!state.webhookUrl.trim()}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-slate-200 hover:bg-slate-800 disabled:bg-slate-300 disabled:shadow-none"
+                    >
+                      Connect
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
-          <div className="p-6 space-y-4">
+        </SectionCard>
+
+        <SectionCard icon={RefreshCw} title="External POS Integration" eyebrow="Store-owned stock sync" tone="amber">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Evolution API URL</label>
+              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+                PasalOS / Custom POS Webhook Endpoint
+              </label>
               <input
-                type="text"
-                name="evolutionApiUrl"
-                value={formData.evolutionApiUrl}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm font-mono"
-                placeholder="https://evo.yourdomain.com"
+                type="url"
+                value={posEndpoint}
+                onChange={(event) => {
+                  setPosEndpoint(event.target.value);
+                  setPosSyncState('idle');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-800 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10"
+                placeholder="https://pasalos.example.com/webhooks/inventory"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Instance Name</label>
-                <input
-                  type="text"
-                  name="evolutionInstance"
-                  value={formData.evolutionInstance}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                  placeholder="samuhik-instance"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">API Key</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    name="evolutionApiKey"
-                    value={formData.evolutionApiKey}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-sm"
-                    placeholder="••••••••••••••••"
-                  />
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                </div>
-              </div>
-            </div>
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex gap-3">
-              <AlertCircle className="w-5 h-5 text-slate-400 shrink-0" />
-              <p className="text-xs text-slate-500 leading-relaxed">
-                The AI Assistant uses this connection to send and receive messages. Ensure your Evolution API instance is paired with a WhatsApp account.
+            <button
+              type="button"
+              onClick={syncInventory}
+              disabled={!posEndpoint.trim() || posSyncState === 'syncing'}
+              className="h-12 rounded-xl bg-amber-600 px-6 text-sm font-bold text-white shadow-lg shadow-amber-100 hover:bg-amber-700 disabled:bg-slate-300 disabled:shadow-none"
+            >
+              {posSyncState === 'syncing' ? 'Syncing...' : 'Sync Inventory'}
+            </button>
+          </div>
+          <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <p className="text-sm leading-6 text-amber-900">
+                Store Admins can manage their daily POS sync here. Super Admins can also audit and override tenant-level POS policy from the platform console.
               </p>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between pt-4">
-          {isSaved ? (
-            <div className="text-emerald-600 font-bold text-sm flex items-center gap-2 animate-in fade-in slide-in-from-left-4">
-              <Save className="w-4 h-4" />
-              Settings saved successfully!
+          {posSyncState === 'synced' && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              <CheckCircle2 className="h-4 w-4" />
+              Inventory sync simulated. This is ready for PasalOS API wiring tomorrow.
             </div>
-          ) : (
-            <div></div>
           )}
-          <button
-            type="submit"
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-xl shadow-slate-200 transform active:scale-[0.98]"
-          >
-            Save Changes
-          </button>
-        </div>
-      </form>
+        </SectionCard>
 
-      <div className="mt-12 p-6 bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 text-center">
-        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">AI Engine Status</p>
-        <p className="text-sm text-slate-600 font-medium italic">
-          "Using Samuhik Global LLM (Romanized Nepali Optimized). Settings managed by platform vendor."
-        </p>
+        <SectionCard icon={Route} title="AI Routing & Ticket Rules" eyebrow="Handover policy" tone="blue">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <ToggleSwitch
+                checked={routingRules.aiFirst}
+                onChange={(checked) => setRoutingRules((current) => ({ ...current, aiFirst: checked }))}
+                label="AI-first replies"
+                description="Let the LLM draft the first response before a human takes over."
+              />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <ToggleSwitch
+                checked={routingRules.routeAngryCustomers}
+                onChange={(checked) => setRoutingRules((current) => ({ ...current, routeAngryCustomers: checked }))}
+                label="Escalate frustrated customers"
+                description="Route angry or human-request messages directly to staff."
+              />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <ToggleSwitch
+                checked={routingRules.businessHoursOnly}
+                onChange={(checked) => setRoutingRules((current) => ({ ...current, businessHoursOnly: checked }))}
+                label="Business-hours automation"
+                description="Pause AI outside store hours and create follow-up tickets."
+              />
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <ToggleSwitch
+                checked={routingRules.autoCreateTicket}
+                onChange={(checked) => setRoutingRules((current) => ({ ...current, autoCreateTicket: checked }))}
+                label="Auto-create tickets"
+                description="Create an internal ticket when order intent or escalation is detected."
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={Bot} title="Readiness Checklist" eyebrow="Tomorrow wiring" tone="emerald">
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              'Supabase tenants, conversations, messages, and inventory tables',
+              'Webhook receiver for incoming omnichannel payloads',
+              'LLM context builder with tenant prompt and POS inventory snapshot',
+            ].map((item) => (
+              <div key={item} className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <ShieldCheck className="mb-3 h-5 w-5 text-emerald-600" />
+                <p className="text-sm font-semibold leading-6 text-emerald-950">{item}</p>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
       </div>
     </div>
   );
