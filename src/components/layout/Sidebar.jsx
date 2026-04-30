@@ -8,7 +8,8 @@ import {
   LogOut, 
   Bot,
   Shield,
-  LayoutDashboard
+  LayoutDashboard,
+  FileSpreadsheet
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -18,6 +19,7 @@ const Sidebar = () => {
     { to: '/vendor', icon: LayoutDashboard, label: 'Platform', superOnly: true },
     { to: '/inbox', icon: Inbox, label: 'Inbox', hideForSuper: false },
     { to: '/inventory', icon: Shield, label: 'Inventory', adminOnly: true },
+    { to: '/admin/orders', icon: FileSpreadsheet, label: 'Orders', adminOnly: true },
     { to: '/admin/config', icon: Settings, label: 'Settings', adminOnly: true },
     { to: '/admin/users', icon: Users, label: 'Team', adminOnly: true },
   ];
