@@ -27,23 +27,23 @@ import ChannelBadge from './ChannelBadge';
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
 const CHANNEL_META = {
-  whatsapp:  { label: 'WhatsApp',  icon: MessageCircle,     color: 'bg-emerald-500', tint: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  instagram: { label: 'Instagram', icon: Camera,            color: 'bg-gradient-to-tr from-purple-500 to-pink-500', tint: 'bg-rose-50 text-rose-700 ring-rose-200' },
-  messenger: { label: 'Messenger', icon: MessageSquareText, color: 'bg-blue-500', tint: 'bg-blue-50 text-blue-700 ring-blue-200' },
-  tiktok:    { label: 'TikTok',    icon: Music2,            color: 'bg-slate-800', tint: 'bg-slate-100 text-slate-700 ring-slate-200' },
+  whatsapp:  { label: 'WhatsApp',  icon: MessageCircle,     color: 'bg-emerald-500', tint: 'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30' },
+  instagram: { label: 'Instagram', icon: Camera,            color: 'bg-gradient-to-tr from-purple-500 to-pink-500', tint: 'bg-rose-500/20 text-rose-400 ring-rose-500/30' },
+  messenger: { label: 'Messenger', icon: MessageSquareText, color: 'bg-blue-500', tint: 'bg-blue-500/20 text-blue-400 ring-blue-500/30' },
+  tiktok:    { label: 'TikTok',    icon: Music2,            color: 'bg-slate-800', tint: 'bg-slate-500/20 text-slate-300 ring-slate-500/30' },
 };
 
 const PRIORITY_CLASSES = {
-  urgent: 'bg-red-100 text-red-700 ring-red-200',
-  high: 'bg-amber-100 text-amber-700 ring-amber-200',
-  normal: 'bg-blue-100 text-blue-700 ring-blue-200',
-  low: 'bg-slate-100 text-slate-600 ring-slate-200',
+  urgent: 'bg-red-500/20 text-red-400 ring-red-500/30',
+  high: 'bg-warm/20 text-warm ring-warm/30',
+  normal: 'bg-blue-500/20 text-blue-400 ring-blue-500/30',
+  low: 'bg-slate-500/20 text-slate-400 ring-slate-500/30',
 };
 
 const TICKET_STATUS_CLASSES = {
-  open: 'bg-emerald-100 text-emerald-700',
-  closed: 'bg-slate-200 text-slate-600',
-  pending: 'bg-amber-100 text-amber-700',
+  open: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+  closed: 'bg-surface text-muted border border-subtle',
+  pending: 'bg-warm/20 text-warm border border-warm/30',
 };
 
 /* ── Sub-components ───────────────────────────────────────────────────────── */
@@ -51,11 +51,11 @@ const TICKET_STATUS_CLASSES = {
 const SectionHeader = ({ icon: Icon, title, count, action, actionLabel = 'View All' }) => (
   <div className="mb-3 flex items-center justify-between">
     <div className="flex items-center gap-2">
-      {Icon && <Icon className="h-4 w-4 text-slate-400" />}
-      <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+      {Icon && <Icon className="h-4 w-4 text-muted" />}
+      <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted">
         {title}
         {count !== undefined && (
-          <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-slate-200 px-1 text-[10px] font-bold text-slate-600">
+          <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-surface border border-subtle px-1 text-[10px] font-bold text-secondary">
             {count}
           </span>
         )}
@@ -65,7 +65,7 @@ const SectionHeader = ({ icon: Icon, title, count, action, actionLabel = 'View A
       <button
         type="button"
         onClick={action}
-        className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+        className="flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent-dim transition-colors"
       >
         {actionLabel}
         <ChevronRight className="h-3 w-3" />
@@ -84,20 +84,20 @@ const DetailRow = ({ icon: Icon, label, value, copyable }) => {
 
   return (
     <div className="group flex items-start gap-3">
-      <Icon className="h-4 w-4 mt-0.5 text-slate-400 shrink-0" />
+      <Icon className="h-4 w-4 mt-0.5 text-muted shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 leading-none mb-1">{label}</p>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-muted leading-none mb-1">{label}</p>
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-slate-700 leading-tight truncate">{value || '—'}</p>
+          <p className="text-sm font-medium text-primary leading-tight truncate">{value || '—'}</p>
           {copyable && value && (
             <button
               type="button"
               onClick={handleCopy}
-              className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 transition-all"
+              className="opacity-0 group-hover:opacity-100 text-muted hover:text-accent transition-all"
               title="Copy"
             >
               {copied
-                ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                ? <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
                 : <Copy className="h-3.5 w-3.5" />}
             </button>
           )}
@@ -108,26 +108,26 @@ const DetailRow = ({ icon: Icon, label, value, copyable }) => {
 };
 
 const NoteItem = ({ note }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 transition-colors hover:border-slate-200">
+  <div className="rounded-xl border border-subtle bg-surface p-3 transition-colors hover:border-medium">
     <div className="mb-1.5 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/20 border border-accent/30 text-[10px] font-bold text-accent">
           {note.authorInitials || 'SA'}
         </span>
-        <span className="text-xs font-bold text-slate-700">{note.author || 'Staff'}</span>
+        <span className="text-xs font-bold text-primary">{note.author || 'Staff'}</span>
       </div>
-      <span className="text-[10px] text-slate-400">{note.time || 'Just now'}</span>
+      <span className="text-[10px] text-muted">{note.time || 'Just now'}</span>
     </div>
-    <p className="text-xs text-slate-600 leading-relaxed">{note.text || note}</p>
+    <p className="text-xs text-secondary leading-relaxed">{note.text || note}</p>
   </div>
 );
 
 const TicketItem = ({ ticket }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 transition-all hover:border-slate-200 hover:shadow-sm">
+  <div className="rounded-xl border border-subtle bg-surface p-3 transition-all hover:border-medium hover:shadow-[0_0_15px_rgba(0,0,0,0.5)]">
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <p className="text-xs font-mono font-bold text-slate-500">#{ticket.id}</p>
-        <p className="mt-1 text-sm font-semibold text-slate-900 truncate">{ticket.title}</p>
+        <p className="text-xs font-mono font-bold text-muted">#{ticket.id}</p>
+        <p className="mt-1 text-sm font-semibold text-primary truncate">{ticket.title}</p>
       </div>
       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${PRIORITY_CLASSES[ticket.priority] || PRIORITY_CLASSES.normal}`}>
         {ticket.priority || 'Normal'}
@@ -137,20 +137,20 @@ const TicketItem = ({ ticket }) => (
       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${TICKET_STATUS_CLASSES[ticket.status] || TICKET_STATUS_CLASSES.open}`}>
         {ticket.status || 'Open'}
       </span>
-      <span className="text-[10px] text-slate-400">{ticket.time || ''}</span>
+      <span className="text-[10px] text-muted">{ticket.time || ''}</span>
     </div>
   </div>
 );
 
 const CrmDealItem = ({ deal }) => (
-  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 transition-all hover:border-slate-200">
+  <div className="rounded-xl border border-subtle bg-surface p-3 transition-all hover:border-medium">
     <div className="flex items-center gap-2 mb-1">
-      <span className={`flex h-2 w-2 rounded-full ${deal.isNew ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-      <span className="text-sm font-semibold text-slate-900">{deal.name}</span>
-      {deal.isNew && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">New</span>}
+      <span className={`flex h-2 w-2 rounded-full ${deal.isNew ? 'bg-accent shadow-[0_0_8px_rgba(0,212,170,0.8)]' : 'bg-muted'}`} />
+      <span className="text-sm font-semibold text-primary">{deal.name}</span>
+      {deal.isNew && <span className="rounded-full bg-accent/20 border border-accent/30 px-1.5 py-0.5 text-[9px] font-bold text-accent">New</span>}
     </div>
-    <p className="text-xs text-slate-500 truncate">{deal.email}</p>
-    <p className="mt-0.5 text-[11px] text-slate-400">{deal.company}</p>
+    <p className="text-xs text-secondary truncate">{deal.email}</p>
+    <p className="mt-0.5 text-[11px] text-muted font-mono">{deal.company}</p>
   </div>
 );
 
@@ -213,12 +213,13 @@ const ContextPanel = ({ conversation }) => {
 
   if (!conversation) {
     return (
-      <aside className="hidden w-80 flex-col border-l border-slate-200 bg-white xl:flex">
-        <div className="flex flex-1 items-center justify-center p-6 text-center">
+      <aside className="hidden w-80 flex-col border-l border-subtle bg-elevated xl:flex relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none"></div>
+        <div className="flex flex-1 items-center justify-center p-6 text-center relative z-10">
           <div>
-            <BarChart3 className="mx-auto mb-3 h-10 w-10 text-slate-200" />
-            <p className="text-sm font-semibold text-slate-400">Select a conversation</p>
-            <p className="mt-1 text-xs text-slate-400">Customer details will appear here</p>
+            <BarChart3 className="mx-auto mb-3 h-10 w-10 text-muted opacity-50" />
+            <p className="text-sm font-semibold text-secondary">Select a conversation</p>
+            <p className="mt-1 text-xs text-muted">Customer details will appear here</p>
           </div>
         </div>
       </aside>
@@ -246,123 +247,127 @@ const ContextPanel = ({ conversation }) => {
   };
 
   return (
-    <aside className="hidden w-[340px] flex-col overflow-y-auto border-l border-slate-200 bg-white xl:flex">
-      {/* ── Customer Avatar & Name ──────────────────────────────────────── */}
-      <div className="flex flex-col items-center border-b border-slate-100 px-6 pb-5 pt-6">
-        <div className="relative mb-3">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-2xl font-bold text-white shadow-lg shadow-indigo-100">
-            {conversation.initials || conversation.customerName?.charAt(0) || '?'}
+    <aside className="hidden w-[340px] flex-col overflow-y-auto border-l border-subtle bg-elevated xl:flex relative">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      
+      <div className="relative z-10 flex flex-col h-full">
+        {/* ── Customer Avatar & Name ──────────────────────────────────────── */}
+        <div className="flex flex-col items-center border-b border-subtle px-6 pb-5 pt-6 bg-surface/50">
+          <div className="relative mb-3">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-2xl font-bold text-white shadow-lg shadow-indigo-500/20 ring-4 ring-deep">
+              {conversation.initials || conversation.customerName?.charAt(0) || '?'}
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-surface shadow-sm ring-2 ring-surface">
+              <ChannelBadge platform={platform} size="sm" />
+            </span>
           </div>
-          <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm ring-2 ring-white">
-            <ChannelBadge platform={platform} size="sm" />
-          </span>
+          <h3 className="text-base font-bold text-primary">{conversation.customerName}</h3>
+          <p className="mt-0.5 text-xs text-muted font-mono">@{(conversation.customerName || '').toLowerCase().replace(/\s+/g, '_')}</p>
         </div>
-        <h3 className="text-base font-bold text-slate-900">{conversation.customerName}</h3>
-        <p className="mt-0.5 text-xs text-slate-500">@{(conversation.customerName || '').toLowerCase().replace(/\s+/g, '_')}</p>
-      </div>
 
-      {/* ── Channel & Status ────────────────────────────────────────────── */}
-      <div className="border-b border-slate-100 px-6 py-4">
-        <SectionHeader title="Channel" />
-        <div className="flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ${channelMeta.tint}`}>
-            <ChannelIcon className="h-3.5 w-3.5" />
-            {channelMeta.label}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Active
-          </span>
+        {/* ── Channel & Status ────────────────────────────────────────────── */}
+        <div className="border-b border-subtle px-6 py-4">
+          <SectionHeader title="Channel" />
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ${channelMeta.tint}`}>
+              <ChannelIcon className="h-3.5 w-3.5" />
+              {channelMeta.label}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent ring-1 ring-accent/20">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_currentColor]" />
+              Active
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* ── Contact Information ──────────────────────────────────────────── */}
-      <div className="border-b border-slate-100 px-6 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <SectionHeader title="Contact Information" />
-          <button type="button" className="text-slate-400 hover:text-indigo-600 transition-colors" title="Edit contact">
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="space-y-3">
-          <DetailRow icon={Phone} label="Phone" value={conversation.phone || '+977 98XX XXX XXX'} copyable />
-          <DetailRow icon={Mail} label="Email" value={conversation.email || `${(conversation.customerName || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`} copyable />
-          <DetailRow icon={MapPin} label="Location" value={conversation.address || 'Kathmandu, Nepal'} />
-          <DetailRow icon={ShoppingBag} label="Lifetime Value" value={conversation.lifetimeValue || 'Rs. 12,500'} />
-        </div>
-      </div>
-
-      {/* ── Internal Notes ───────────────────────────────────────────────── */}
-      <div className="border-b border-slate-100 px-6 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <SectionHeader title="Internal Notes" count={notes.length} action={notes.length > 2 ? () => setShowAllNotes(!showAllNotes) : undefined} actionLabel={showAllNotes ? 'Show Less' : 'View All'} />
-          <button
-            type="button"
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-            title="Add note"
-            onClick={() => setNewNote(newNote ? '' : ' ')}
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        {newNote !== '' && (
-          <div className="mb-3 flex gap-2">
-            <input
-              value={newNote.trim() ? newNote : ''}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Type a note..."
-              className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
-              autoFocus
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAddNote(); }}
-            />
-            <button
-              type="button"
-              onClick={handleAddNote}
-              className="rounded-lg bg-indigo-600 px-2.5 py-2 text-white hover:bg-indigo-700 transition-colors"
-            >
-              <Send className="h-3.5 w-3.5" />
+        {/* ── Contact Information ──────────────────────────────────────────── */}
+        <div className="border-b border-subtle px-6 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader title="Contact Information" />
+            <button type="button" className="text-muted hover:text-accent transition-colors" title="Edit contact">
+              <Pencil className="h-3.5 w-3.5" />
             </button>
           </div>
-        )}
-        <div className="space-y-2">
-          {visibleNotes.map((note, i) => (
-            <NoteItem key={i} note={note} />
-          ))}
+          <div className="space-y-3">
+            <DetailRow icon={Phone} label="Phone" value={conversation.phone || '+977 98XX XXX XXX'} copyable />
+            <DetailRow icon={Mail} label="Email" value={conversation.email || `${(conversation.customerName || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`} copyable />
+            <DetailRow icon={MapPin} label="Location" value={conversation.address || 'Kathmandu, Nepal'} />
+            <DetailRow icon={ShoppingBag} label="Lifetime Value" value={conversation.lifetimeValue || 'Rs. 12,500'} />
+          </div>
         </div>
-      </div>
 
-      {/* ── Tickets ──────────────────────────────────────────────────────── */}
-      <div className="border-b border-slate-100 px-6 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <SectionHeader title="Tickets" count={tickets.length} action={tickets.length > 2 ? () => setShowAllTickets(!showAllTickets) : undefined} actionLabel={showAllTickets ? 'Show Less' : 'View All'} />
-          <button
-            type="button"
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors"
-            title="Create ticket"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
+        {/* ── Internal Notes ───────────────────────────────────────────────── */}
+        <div className="border-b border-subtle px-6 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader title="Internal Notes" count={notes.length} action={notes.length > 2 ? () => setShowAllNotes(!showAllNotes) : undefined} actionLabel={showAllNotes ? 'Show Less' : 'View All'} />
+            <button
+              type="button"
+              className="flex h-6 w-6 items-center justify-center rounded-lg bg-surface border border-subtle text-secondary hover:text-primary hover:border-medium transition-colors"
+              title="Add note"
+              onClick={() => setNewNote(newNote ? '' : ' ')}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {newNote !== '' && (
+            <div className="mb-3 flex gap-2">
+              <input
+                value={newNote.trim() ? newNote : ''}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Type a note..."
+                className="flex-1 rounded-lg border border-subtle bg-surface px-3 py-2 text-xs text-primary outline-none focus-ring"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddNote(); }}
+              />
+              <button
+                type="button"
+                onClick={handleAddNote}
+                className="rounded-lg bg-accent px-2.5 py-2 text-deep hover:bg-accent-dim transition-colors"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+          <div className="space-y-2">
+            {visibleNotes.map((note, i) => (
+              <NoteItem key={i} note={note} />
+            ))}
+          </div>
         </div>
-        <div className="space-y-2">
-          {visibleTickets.map((ticket) => (
-            <TicketItem key={ticket.id} ticket={ticket} />
-          ))}
-        </div>
-      </div>
 
-      {/* ── CRM ──────────────────────────────────────────────────────────── */}
-      <div className="px-6 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <SectionHeader title="CRM" action={() => {}} actionLabel="View All" />
+        {/* ── Tickets ──────────────────────────────────────────────────────── */}
+        <div className="border-b border-subtle px-6 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader title="Tickets" count={tickets.length} action={tickets.length > 2 ? () => setShowAllTickets(!showAllTickets) : undefined} actionLabel={showAllTickets ? 'Show Less' : 'View All'} />
+            <button
+              type="button"
+              className="flex h-6 w-6 items-center justify-center rounded-lg bg-surface border border-subtle text-secondary hover:text-primary hover:border-medium transition-colors"
+              title="Create ticket"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {visibleTickets.map((ticket) => (
+              <TicketItem key={ticket.id} ticket={ticket} />
+            ))}
+          </div>
         </div>
-        <div className="space-y-2">
-          {crmDeals.map((deal, i) => (
-            <CrmDealItem key={i} deal={deal} />
-          ))}
+
+        {/* ── CRM ──────────────────────────────────────────────────────────── */}
+        <div className="px-6 py-4 mb-4">
+          <div className="mb-3 flex items-center justify-between">
+            <SectionHeader title="CRM" action={() => {}} actionLabel="View All" />
+          </div>
+          <div className="space-y-2">
+            {crmDeals.map((deal, i) => (
+              <CrmDealItem key={i} deal={deal} />
+            ))}
+          </div>
+          <p className="mt-3 text-center text-[11px] text-muted font-mono">
+            {crmDeals.length} {crmDeals.length === 1 ? 'deal' : 'deals'} in pipeline
+          </p>
         </div>
-        <p className="mt-3 text-center text-[11px] text-slate-400">
-          {crmDeals.length} {crmDeals.length === 1 ? 'deal' : 'deals'} in pipeline
-        </p>
       </div>
     </aside>
   );
