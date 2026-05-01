@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
+import { ToastProvider } from './contexts/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/Login';
@@ -24,58 +25,60 @@ const RootRedirect = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <DataProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            
-            <Route element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="/inbox" element={<Inbox />} />
-              <Route path="/inventory" element={
-                <ProtectedRoute requiredRole="admin">
-                  <Inventory />
-                </ProtectedRoute>
-              } />
+    <ToastProvider>
+      <AuthProvider>
+        <DataProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
               
-              <Route path="/admin">
-                <Route path="config" element={
+              <Route element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }>
+                <Route path="/inbox" element={<Inbox />} />
+                <Route path="/inventory" element={
                   <ProtectedRoute requiredRole="admin">
-                    <AdminConfig />
+                    <Inventory />
                   </ProtectedRoute>
                 } />
-                <Route path="users" element={
-                  <ProtectedRoute requiredRole="admin">
-                    <UserManagement />
+                
+                <Route path="/admin">
+                  <Route path="config" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminConfig />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="users" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <UserManagement />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="orders" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Orders />
+                    </ProtectedRoute>
+                  } />
+                  <Route index element={<Navigate to="config" replace />} />
+                </Route>
+
+                {/* Vendor Routes */}
+                <Route path="/vendor" element={
+                  <ProtectedRoute requiredRole="super_admin">
+                    <VendorDashboard />
                   </ProtectedRoute>
                 } />
-                <Route path="orders" element={
-                  <ProtectedRoute requiredRole="admin">
-                    <Orders />
-                  </ProtectedRoute>
-                } />
-                <Route index element={<Navigate to="config" replace />} />
+
               </Route>
 
-              {/* Vendor Routes */}
-              <Route path="/vendor" element={
-                <ProtectedRoute requiredRole="super_admin">
-                  <VendorDashboard />
-                </ProtectedRoute>
-              } />
-
-            </Route>
-
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </DataProvider>
-    </AuthProvider>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </DataProvider>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

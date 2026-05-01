@@ -2,17 +2,19 @@ import React from 'react';
 
 const SectionCard = ({ icon: Icon, title, eyebrow, children, action, tone = 'indigo' }) => {
   const toneClasses = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
-    blue: 'bg-blue-50 text-blue-600',
-    rose: 'bg-rose-50 text-rose-600',
-    slate: 'bg-slate-100 text-slate-600',
+    indigo: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 glow-indigo',
+    emerald: 'bg-accent/10 text-accent border border-accent/20 glow-accent',
+    amber: 'bg-warm/10 text-warm border border-warm/20 glow-warm',
+    blue: 'bg-blue-500/10 text-blue-400 border border-blue-500/20 glow-blue',
+    rose: 'bg-rose-500/10 text-rose-400 border border-rose-500/20 glow-rose',
+    slate: 'bg-surface text-secondary border border-subtle',
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
+    <section className="relative overflow-hidden rounded-2xl border border-subtle glass-card shadow-2xl">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      
+      <div className="relative z-10 flex items-center justify-between gap-4 border-b border-subtle bg-surface/50 backdrop-blur-md px-6 py-4">
         <div className="flex min-w-0 items-center gap-3">
           {Icon && (
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneClasses[tone] || toneClasses.indigo}`}>
@@ -20,13 +22,13 @@ const SectionCard = ({ icon: Icon, title, eyebrow, children, action, tone = 'ind
             </span>
           )}
           <div className="min-w-0">
-            {eyebrow && <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{eyebrow}</p>}
-            <h3 className="truncate text-base font-bold text-slate-900">{title}</h3>
+            {eyebrow && <p className="text-[10px] font-bold uppercase tracking-widest text-muted">{eyebrow}</p>}
+            <h3 className="truncate text-base font-extrabold text-primary">{title}</h3>
           </div>
         </div>
         {action}
       </div>
-      <div className="p-6">{children}</div>
+      <div className="relative z-10 p-6">{children}</div>
     </section>
   );
 };

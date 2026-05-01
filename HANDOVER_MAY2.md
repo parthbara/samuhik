@@ -1,8 +1,8 @@
 # Samuhik AI — Handover Document
 
-> **Date:** 2026-04-30 (v2 — post data-grid & sidebar update)  
-> **Branch:** `feature/new-ui-polish`  
-> **Status:** Build verified ✅ · Demo mode functional · Ready for backend wiring
+> **Date:** 2026-05-01 (v3 — dark cinematic theme & full UI polish)  
+> **Branch:** `new-updates-parth`  
+> **Status:** Build verified ✅ · Demo mode fully populated & functional · Ready for backend wiring
 
 ---
 
@@ -15,7 +15,7 @@ It unifies customer conversations from **WhatsApp, Instagram, Messenger, and Tik
 
 | Feature | Detail |
 |---|---|
-| **AI Auto-Reply** | Gemma 4 E4B generates structured JSON responses (`chat`, `order`, `escalate`) in **Romanized Nepali** with `<\|think\|>` chain-of-thought reasoning. |
+| **AI Auto-Reply** | Gemma 4 E4B generates structured JSON responses (`chat`, `order`, `escalate`) in **Romanized Nepali** with `<|think|>` chain-of-thought reasoning. |
 | **Multi-Tenant SaaS** | Each business (optical shop, clothing store, etc.) is an isolated **tenant** in Supabase with its own users, conversations, inventory, and WhatsApp instance. |
 | **Role-Based Access** | Three roles — `super_admin` (platform vendor), `admin` (store owner), `agent` (staff) — with route-level gating and Supabase RLS. |
 | **WhatsApp Bridge** | [Evolution API](https://github.com/EvolutionAPI/evolution-api) (Docker) acts as the WhatsApp middleware; webhooks push inbound messages into the Fastify backend. |
@@ -38,9 +38,39 @@ It unifies customer conversations from **WhatsApp, Instagram, Messenger, and Tik
 
 ## 2. What Changed in This Update
 
-### 2.1 Orders Spreadsheet (Enhanced)
+### 2.1 Visual Overhaul (Dark Cinematic Theme)
 
-**File:** `src/pages/Orders.jsx`
+**File:** `src/index.css` & All UI Components
+
+The entire platform was transitioned from a generic light SaaS interface to a **premium, dark cinematic aesthetic** to impress stakeholders and differentiate from competitors.
+
+| Feature | Detail |
+|---|---|
+| **Deep Slate Foundation** | Replaced white backgrounds with `#0a0a0f` for reduced eye strain and a modern "pro" app feel. |
+| **Electric Teal Accents** | Applied `#00d4aa` (vibrant teal) for primary actions, badges, and glows, creating striking contrast. |
+| **Glassmorphism** | Cards, sidebars, and modals now use semi-transparent `rgba()` backgrounds with `backdrop-blur` for depth. |
+| **Mesh Gradients & Noise** | Added subtle, slow-moving animated background mesh gradients and static noise overlays for texture. |
+| **Micro-Animations** | Hover states (`hover:border-medium`, `transition-all`), smooth toast pop-ins (`animate-slide-up`), and skeleton loading principles implemented. |
+
+### 2.2 Global Configuration & Demo Population
+
+**Files:** `src/lib/config.js` & `src/lib/mockData.js`
+
+- **Centralized `DEMO_MODE`:** Moved the hardcoded `DEMO_MODE` toggle out of individual contexts and into a single source of truth (`src/lib/config.js`).
+- **Rich Mock Data:** The Inbox and Inventory pages are no longer empty. Added 6 detailed Nepali commerce conversation threads and 14 mock SKUs (lenses, frames, apparel) to make the demo instantly impactful.
+- **Global Toast System:** Introduced `ToastProvider` and wired it into `AdminConfig`, `UserManagement`, and `VendorDashboard` for real-time success/error feedback.
+
+### 2.3 Final Polish & Demo Refinements (May 2 Update)
+
+- **Dark/Light Mode Toggle**: Added a seamless theme switcher in the Sidebar (`Sidebar.jsx`).
+- **Eye-Comfort Light Theme**: Implemented a warm, low-glare light theme (`.light` in `index.css`) with soft off-whites (`#f8f9fa`) and muted teal accents to reduce eye strain.
+- **Toggle Switch Fixes**: Re-aligned the custom toggle switches across all pages (including inline `ChatWindow.jsx` toggles) to prevent circle overflow.
+- **Pre-Connected Mock Channels**: Updated the initial state in `AdminConfig.jsx` to pre-fill webhooks for WhatsApp, Instagram, and Messenger, setting them to `connected` by default for a more alive demo experience.
+- **Removed Redundancies**: Cleaned up duplicated "Tomorrow Wiring" readiness checklists from the Settings pages.
+
+### 2.4 Orders Spreadsheet (Enhanced)
+
+**File:** `src/pages/Orders.jsx`:** `src/pages/Orders.jsx`
 
 The Orders page was completely rebuilt with a robust, spreadsheet-style data grid:
 

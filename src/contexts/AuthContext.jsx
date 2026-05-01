@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEMO_USERS } from '../lib/mockData';
-
-// ── Demo Mode Toggle ────────────────────────────────────────────────────────
-// Set to false and uncomment Supabase imports when you have a live backend.
-const DEMO_MODE = true;
+import { DEMO_MODE } from '../lib/config';
 
 const AuthContext = createContext();
 
