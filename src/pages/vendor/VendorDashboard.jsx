@@ -1,5 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ALL_TENANTS } from '../../lib/mockData';
+import { DEMO_MODE } from '../../lib/config';
+import { useToast } from '../../contexts/ToastContext';
 import { 
   Building2, 
   Plus, 
@@ -27,13 +29,11 @@ import ToggleSwitch from '../../components/settings/ToggleSwitch';
 import SectionCard from '../../components/settings/SectionCard';
 
 const PLATFORM_OPTIONS = [
-  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, className: 'bg-emerald-50 text-emerald-700 ring-emerald-100' },
-  { id: 'instagram', label: 'Instagram', icon: Camera, className: 'bg-rose-50 text-rose-700 ring-rose-100' },
-  { id: 'messenger', label: 'Messenger', icon: MessageSquareText, className: 'bg-blue-50 text-blue-700 ring-blue-100' },
-  { id: 'tiktok', label: 'TikTok', icon: Music2, className: 'bg-slate-100 text-slate-700 ring-slate-200' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle, className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_8px_rgba(16,185,129,0.3)]' },
+  { id: 'instagram', label: 'Instagram', icon: Camera, className: 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.3)]' },
+  { id: 'messenger', label: 'Messenger', icon: MessageSquareText, className: 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.3)]' },
+  { id: 'tiktok', label: 'TikTok', icon: Music2, className: 'bg-surface text-secondary border-subtle' },
 ];
-
-const DEMO_MODE = true;
 
 const buildTenantMessages = (tenant) => [
   {
@@ -78,6 +78,8 @@ const SuperAdminDashboard = () => {
   const [newTenantPlatforms, setNewTenantPlatforms] = useState(['whatsapp']);
   const [messageTenantId, setMessageTenantId] = useState('');
   const [inventoryTenantId, setInventoryTenantId] = useState('');
+  const { addToast } = useToast();
+  
   const [platformEngine, setPlatformEngine] = useState({
     llmBaseUrl: 'https://remote-lmstudio.ngrok.app/v1',
     defaultModel: 'gemma-4-e4b-uncensored-hauhaucs-aggressive',
@@ -119,7 +121,6 @@ const SuperAdminDashboard = () => {
       return;
     }
 
-    // Real Supabase path
     const { supabase } = await import('../../lib/supabase');
     const { data, error } = await supabase
       .from('tenants')
@@ -127,7 +128,7 @@ const SuperAdminDashboard = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching tenants:', error.message);
+      addToast('Error fetching tenants: ' + error.message, 'error');
     } else {
       setTenants(data);
       setMessageTenantId(data[0]?.id || '');
@@ -206,7 +207,6 @@ const SuperAdminDashboard = () => {
     e.preventDefault();
 
     if (DEMO_MODE) {
-      // Add locally in demo mode
       const newTenant = {
         id: 'tenant-' + Date.now(),
         name: newTenantName,
@@ -236,10 +236,10 @@ const SuperAdminDashboard = () => {
       setShowAddModal(false);
       setNewTenantName('');
       setNewTenantPlatforms(['whatsapp']);
+      addToast('New store created successfully', 'success');
       return;
     }
 
-    // Real Supabase path
     const { supabase } = await import('../../lib/supabase');
     const dummyHash = 'dummy_' + Math.random().toString(36).substring(7);
     
@@ -253,123 +253,147 @@ const SuperAdminDashboard = () => {
       .single();
 
     if (error) {
-      alert('Error creating tenant: ' + error.message);
+      addToast('Error creating tenant: ' + error.message, 'error');
     } else {
       setShowAddModal(false);
       setNewTenantName('');
       fetchTenants();
+      addToast('New store created successfully', 'success');
     }
   };
 
+  const handleSavePlatformEngine = () => {
+    addToast('Platform Engine Settings Saved', 'success');
+  };
+  
+  const handleSaveBrainSettings = () => {
+    addToast('Tenant Brain Settings Saved', 'success');
+  };
+
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-8 max-w-7xl mx-auto relative">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Platform Overview</h2>
-          <p className="text-slate-500 text-sm mt-1">Manage all business customers and system health.</p>
+          <h2 className="text-3xl font-extrabold text-primary tracking-tight">Platform Overview</h2>
+          <p className="text-secondary text-sm mt-1 font-medium">Manage all business customers and system health.</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-lg shadow-indigo-100"
+          className="flex items-center gap-2 bg-accent hover:bg-accent-dim text-deep px-4 py-2 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(0,212,170,0.3)] hover:shadow-[0_0_20px_rgba(0,212,170,0.5)]"
         >
           <Plus className="w-4 h-4" />
           Add New Store
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Total Stores</p>
-          <p className="text-3xl font-bold text-slate-900">{tenants.length}</p>
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="glass-card p-6 rounded-2xl shadow-lg stat-card">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Total Stores</p>
+          <p className="text-4xl font-black text-primary">{tenants.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Active Instances</p>
-          <p className="text-3xl font-bold text-emerald-600">
+        <div className="glass-card p-6 rounded-2xl shadow-lg stat-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-accent rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Active Instances</p>
+          <p className="text-4xl font-black text-accent">
             {tenants.filter(t => t.evolution_instance).length}
           </p>
         </div>
-        {/* Placeholder stats */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Total Messages</p>
-          <p className="text-3xl font-bold text-indigo-600">1.2k</p>
+        <div className="glass-card p-6 rounded-2xl shadow-lg stat-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Total Messages</p>
+          <p className="text-4xl font-black text-blue-400">1.2k</p>
         </div>
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">LLM Load</p>
-          <p className="text-3xl font-bold text-slate-900">Normal</p>
+        <div className="glass-card p-6 rounded-2xl shadow-lg stat-card">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">LLM Load</p>
+          <p className="text-4xl font-black text-primary">Normal</p>
         </div>
       </div>
 
-      <SectionCard icon={Server} title="Platform Engine Controls" eyebrow="Super Admin master settings" tone="indigo">
-        <div className="grid gap-5 lg:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Remote LLM Base URL</span>
-            <input
-              value={platformEngine.llmBaseUrl}
-              onChange={(event) => setPlatformEngine((current) => ({ ...current, llmBaseUrl: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-              placeholder="https://your-lmstudio-ngrok-url/v1"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Default Model</span>
-            <input
-              value={platformEngine.defaultModel}
-              onChange={(event) => setPlatformEngine((current) => ({ ...current, defaultModel: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-              placeholder="gemma-4-e4b..."
-            />
-          </label>
-          <label className="block lg:col-span-2">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Global Guardrail Prompt</span>
-            <textarea
-              rows={3}
-              value={platformEngine.globalGuardrailPrompt}
-              onChange={(event) => setPlatformEngine((current) => ({ ...current, globalGuardrailPrompt: event.target.value }))}
-              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Inbound Webhook Receiver</span>
-            <input
-              value={platformEngine.webhookReceiverUrl}
-              onChange={(event) => setPlatformEngine((current) => ({ ...current, webhookReceiverUrl: event.target.value }))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-              placeholder="https://your-api/webhooks/inbound"
-            />
-          </label>
-          <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <ToggleSwitch
-              checked={platformEngine.aiEnabledByDefault}
-              onChange={(checked) => setPlatformEngine((current) => ({ ...current, aiEnabledByDefault: checked }))}
-              label="AI enabled by default"
-              description="New tenants start with AI auto-reply available."
-            />
-            <ToggleSwitch
-              checked={platformEngine.allowTenantWebSearch}
-              onChange={(checked) => setPlatformEngine((current) => ({ ...current, allowTenantWebSearch: checked }))}
-              label="Allow tenant web search"
-              description="Super Admin can still disable it tenant by tenant."
-            />
-            <ToggleSwitch
-              checked={platformEngine.requireHumanForPayments}
-              onChange={(checked) => setPlatformEngine((current) => ({ ...current, requireHumanForPayments: checked }))}
-              label="Human approval for payment flows"
-              description="Keeps sensitive commercial actions out of full automation."
-            />
+      <div className="relative z-10">
+        <SectionCard icon={Server} title="Platform Engine Controls" eyebrow="Super Admin master settings" tone="indigo">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Remote LLM Base URL</span>
+              <input
+                value={platformEngine.llmBaseUrl}
+                onChange={(event) => setPlatformEngine((current) => ({ ...current, llmBaseUrl: event.target.value }))}
+                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
+                placeholder="https://your-lmstudio-ngrok-url/v1"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Default Model</span>
+              <input
+                value={platformEngine.defaultModel}
+                onChange={(event) => setPlatformEngine((current) => ({ ...current, defaultModel: event.target.value }))}
+                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
+                placeholder="gemma-4-e4b..."
+              />
+            </label>
+            <label className="block lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global Guardrail Prompt</span>
+              <textarea
+                rows={3}
+                value={platformEngine.globalGuardrailPrompt}
+                onChange={(event) => setPlatformEngine((current) => ({ ...current, globalGuardrailPrompt: event.target.value }))}
+                className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 outline-none focus-ring text-primary transition-all"
+              />
+            </label>
+            <label className="block lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Inbound Webhook Receiver</span>
+              <input
+                value={platformEngine.webhookReceiverUrl}
+                onChange={(event) => setPlatformEngine((current) => ({ ...current, webhookReceiverUrl: event.target.value }))}
+                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
+                placeholder="https://your-api/webhooks/inbound"
+              />
+            </label>
+            <div className="lg:col-span-2 grid gap-4 rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
+              <ToggleSwitch
+                checked={platformEngine.aiEnabledByDefault}
+                onChange={(checked) => setPlatformEngine((current) => ({ ...current, aiEnabledByDefault: checked }))}
+                label="AI enabled by default"
+                description="New tenants start with AI auto-reply available."
+              />
+              <div className="h-px w-full bg-subtle"></div>
+              <ToggleSwitch
+                checked={platformEngine.allowTenantWebSearch}
+                onChange={(checked) => setPlatformEngine((current) => ({ ...current, allowTenantWebSearch: checked }))}
+                label="Allow tenant web search"
+                description="Super Admin can still disable it tenant by tenant."
+              />
+              <div className="h-px w-full bg-subtle"></div>
+              <ToggleSwitch
+                checked={platformEngine.requireHumanForPayments}
+                onChange={(checked) => setPlatformEngine((current) => ({ ...current, requireHumanForPayments: checked }))}
+                label="Human approval for payment flows"
+                description="Keeps sensitive commercial actions out of full automation."
+              />
+            </div>
           </div>
-        </div>
-      </SectionCard>
+          <div className="mt-4 flex justify-end">
+             <button
+              onClick={handleSavePlatformEngine}
+              className="rounded-xl bg-surface border border-subtle px-6 py-2.5 text-sm font-bold text-primary hover:bg-hover transition-all"
+            >
+              Save Engine Settings
+            </button>
+          </div>
+        </SectionCard>
+      </div>
 
-      <div className="mt-8 grid gap-6 xl:grid-cols-2">
+      <div className="relative z-10 mt-8 grid gap-6 xl:grid-cols-2">
         <SectionCard icon={ClipboardList} title="Tenant Message Segregation" eyebrow="Omnichannel queue audit" tone="blue">
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
               Inspect tenant messages
             </label>
             <select
               value={messageTenantId}
               onChange={(event) => setMessageTenantId(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+              className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus-ring transition-all"
             >
               {tenants.map((tenant) => (
                 <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
@@ -378,15 +402,15 @@ const SuperAdminDashboard = () => {
           </div>
           <div className="space-y-3">
             {buildTenantMessages(selectedMessageTenant).map((message) => (
-              <div key={message.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div key={message.id} className="rounded-xl border border-subtle bg-surface p-4 hover:border-medium transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{message.channel}</p>
-                    <p className="mt-1 truncate text-sm font-bold text-slate-900">{message.customer}</p>
-                    <p className="mt-1 truncate text-sm text-slate-600">{message.preview}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-secondary">{message.channel}</p>
+                    <p className="mt-1 truncate text-sm font-bold text-primary">{message.customer}</p>
+                    <p className="mt-1 truncate text-sm text-secondary">{message.preview}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                    message.priority === 'High' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border ${
+                    message.priority === 'High' ? 'bg-warm/10 text-warm border-warm/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                   }`}>
                     {message.status}
                   </span>
@@ -398,22 +422,22 @@ const SuperAdminDashboard = () => {
 
         <SectionCard icon={PackageSearch} title="Tenant Stock & Inventory" eyebrow="POS audit view" tone="amber">
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
               Inspect tenant inventory
             </label>
             <select
               value={inventoryTenantId}
               onChange={(event) => setInventoryTenantId(event.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+              className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 text-sm font-bold text-primary outline-none focus-ring transition-all"
             >
               {tenants.map((tenant) => (
                 <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
               ))}
             </select>
           </div>
-          <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="overflow-hidden rounded-xl border border-subtle bg-surface/50">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+              <thead className="bg-surface/50 text-[10px] uppercase tracking-widest text-muted border-b border-subtle">
                 <tr>
                   <th className="px-4 py-3 font-bold">SKU</th>
                   <th className="px-4 py-3 font-bold">Item</th>
@@ -421,15 +445,15 @@ const SuperAdminDashboard = () => {
                   <th className="px-4 py-3 font-bold">Sync</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-subtle">
                 {buildTenantInventory(selectedInventoryTenant).map((item) => (
-                  <tr key={item.sku}>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{item.sku}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-900">{item.item}</td>
-                    <td className="px-4 py-3 font-bold text-slate-700">{item.stock}</td>
+                  <tr key={item.sku} className="hover:bg-surface transition-colors">
+                    <td className="px-4 py-3 font-mono text-xs text-secondary">{item.sku}</td>
+                    <td className="px-4 py-3 font-semibold text-primary">{item.item}</td>
+                    <td className="px-4 py-3 font-bold text-primary">{item.stock}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
-                        item.stock <= 10 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest border ${
+                        item.stock <= 10 ? 'bg-warm/10 text-warm border-warm/20' : 'bg-accent/10 text-accent border-accent/20'
                       }`}>
                         {item.syncStatus}
                       </span>
@@ -442,96 +466,98 @@ const SuperAdminDashboard = () => {
         </SectionCard>
       </div>
 
-      <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-slate-800">Customers (Tenants)</h3>
+      <div className="relative z-10 mt-8 glass-card rounded-2xl shadow-2xl border border-subtle overflow-hidden">
+        <div className="px-6 py-4 border-b border-subtle bg-surface/50 flex items-center justify-between backdrop-blur-md">
+          <h3 className="font-extrabold text-primary">Customers (Tenants)</h3>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
             <input 
-              className="pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all" 
+              className="pl-9 pr-4 py-2 bg-surface border border-subtle rounded-xl text-sm outline-none focus-ring text-primary placeholder:text-muted min-w-[200px] transition-all" 
               placeholder="Filter stores..." 
             />
           </div>
         </div>
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Store Name</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Integration</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Staff</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Created At</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {tenants.map((t) => (
-              <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{t.name}</p>
-                      <p className="text-[10px] font-mono text-slate-400">{t.id}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {(tenantBrainSettings[t.id]?.enabledPlatforms || ['whatsapp']).map((platformId) => {
-                      const platform = PLATFORM_OPTIONS.find((item) => item.id === platformId);
-                      if (!platform) return null;
-                      return (
-                        <span key={platform.id} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${platform.className}`}>
-                          {platform.label}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
-                    <Users className="w-3.5 h-3.5" />
-                    {t.users?.[0]?.count || 0} Members
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-xs text-slate-500">
-                  {new Date(t.created_at).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-all" title="Manage Tenant">
-                      <Settings2 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-all" title="View Dashboard">
-                      <ExternalLink className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-surface/30 border-b border-subtle">
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted">Store Name</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted">Integration</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted">Staff</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted">Created At</th>
+                <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-muted text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-subtle">
+              {tenants.map((t, idx) => (
+                <tr key={t.id} className={`transition-colors hover:bg-hover/80 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-surface/30'}`}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-surface border border-subtle flex items-center justify-center text-primary shadow-sm">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-primary">{t.name}</p>
+                        <p className="text-[10px] font-mono text-secondary mt-0.5">{t.id}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {(tenantBrainSettings[t.id]?.enabledPlatforms || ['whatsapp']).map((platformId) => {
+                        const platform = PLATFORM_OPTIONS.find((item) => item.id === platformId);
+                        if (!platform) return null;
+                        return (
+                          <span key={platform.id} className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${platform.className}`}>
+                            {platform.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5 text-xs text-secondary font-medium">
+                      <Users className="w-3.5 h-3.5" />
+                      {t.users?.[0]?.count || 0} Members
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-xs text-muted font-mono">
+                    {new Date(t.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button className="p-2 hover:bg-surface border border-transparent hover:border-subtle rounded-lg text-muted hover:text-primary transition-all" title="Manage Tenant">
+                        <Settings2 className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 hover:bg-surface border border-transparent hover:border-subtle rounded-lg text-muted hover:text-primary transition-all" title="View Dashboard">
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {tenants.length === 0 && !loading && (
-          <div className="p-12 text-center text-slate-400">
+          <div className="p-12 text-center text-muted font-medium bg-surface/30">
             No customers onboarded yet.
           </div>
         )}
       </div>
 
-      <section className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+      <section className="relative z-10 mt-8 glass-card rounded-2xl shadow-2xl border border-subtle overflow-hidden">
+        <div className="px-6 py-4 border-b border-subtle bg-surface/50 flex items-center justify-between backdrop-blur-md">
           <div className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-indigo-600" />
-            <h3 className="font-bold text-slate-800">Tenant Brain Controls</h3>
+            <Brain className="h-5 w-5 text-indigo-400" />
+            <h3 className="font-extrabold text-primary">Tenant Brain Controls</h3>
           </div>
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-700">
+          <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400 glow-indigo">
             Super Admin
           </span>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-subtle">
           {tenants.map((tenant) => {
             const settings = tenantBrainSettings[tenant.id] || {
               storeContextPrompt: '',
@@ -544,25 +570,25 @@ const SuperAdminDashboard = () => {
             };
 
             return (
-              <form key={tenant.id} className="p-6">
-                <div className="mb-4 flex items-start justify-between gap-4">
+              <form key={tenant.id} className="p-6 bg-transparent hover:bg-surface/20 transition-colors">
+                <div className="mb-4 flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900">{tenant.name}</h4>
-                    <p className="mt-1 font-mono text-[11px] text-slate-400">{tenant.id}</p>
+                    <h4 className="text-sm font-bold text-primary">{tenant.name}</h4>
+                    <p className="mt-1 font-mono text-[11px] text-muted">{tenant.id}</p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <Globe2 className="h-4 w-4 text-slate-500" />
+                  <div className="flex shrink-0 items-center gap-3 rounded-xl border border-subtle bg-surface/50 px-3 py-2">
+                    <Globe2 className="h-4 w-4 text-secondary" />
                     <ToggleSwitch
                       checked={settings.webSearchEnabled}
                       onChange={(checked) => updateTenantBrainSetting(tenant.id, 'webSearchEnabled', checked)}
-                      label="Enable Live Web Search Capability"
+                      label="Enable Live Web Search"
                     />
                   </div>
                 </div>
                 <div className="mb-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <Layers3 className="h-4 w-4 text-slate-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <Layers3 className="h-4 w-4 text-muted" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
                       Provisioned Platforms
                     </span>
                   </div>
@@ -577,8 +603,8 @@ const SuperAdminDashboard = () => {
                           onClick={() => toggleTenantPlatform(tenant.id, platform.id)}
                           className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all ${
                             enabled
-                              ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-white'
+                              ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 glow-indigo'
+                              : 'border-subtle bg-surface text-secondary hover:bg-hover'
                           }`}
                         >
                           <Icon className="h-4 w-4" />
@@ -589,30 +615,30 @@ const SuperAdminDashboard = () => {
                   </div>
                 </div>
                 <label className="block">
-                  <span className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
                     Store Context Prompt
                   </span>
                   <textarea
                     rows={4}
                     value={settings.storeContextPrompt}
                     onChange={(event) => updateTenantBrainSetting(tenant.id, 'storeContextPrompt', event.target.value)}
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                    className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
                     placeholder="You are an assistant for a clothing store. Help customers with sizes, colors, delivery, and exchanges."
                   />
                 </label>
                 <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="rounded-2xl border border-subtle bg-surface/30 p-4">
                     <div className="mb-3 flex items-center gap-2">
-                      <Link2 className="h-4 w-4 text-slate-500" />
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500">Tenant Channel Endpoints</h5>
+                      <Link2 className="h-4 w-4 text-muted" />
+                      <h5 className="text-[10px] font-bold uppercase tracking-widest text-secondary">Tenant Channel Endpoints</h5>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2">
                       {PLATFORM_OPTIONS.map((platform) => {
                         const Icon = platform.icon;
                         const enabled = settings.enabledPlatforms?.includes(platform.id);
                         return (
-                          <label key={platform.id} className={`${enabled ? '' : 'opacity-50'} block`}>
-                            <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                          <label key={platform.id} className={`${enabled ? '' : 'opacity-30'} block transition-opacity`}>
+                            <span className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
                               <Icon className="h-3.5 w-3.5" />
                               {platform.label} Relay URL
                             </span>
@@ -620,7 +646,7 @@ const SuperAdminDashboard = () => {
                               disabled={!enabled}
                               value={settings.channelEndpoints?.[platform.id] || ''}
                               onChange={(event) => updateTenantChannelEndpoint(tenant.id, platform.id, event.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:cursor-not-allowed"
+                              className="w-full rounded-xl border border-subtle bg-surface px-3 py-2.5 font-mono text-xs text-primary outline-none focus-ring disabled:cursor-not-allowed placeholder:text-muted/30"
                               placeholder={`https://relay.example.com/${platform.id}/${tenant.id}`}
                             />
                           </label>
@@ -629,51 +655,52 @@ const SuperAdminDashboard = () => {
                     </div>
                   </div>
                   <div className="grid gap-3">
-                    <label className="block rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <label className="block rounded-2xl border border-subtle bg-surface/30 p-4 hover:bg-surface transition-colors">
+                      <span className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
                         <SlidersHorizontal className="h-3.5 w-3.5" />
                         AI Routing Mode
                       </span>
                       <select
                         value={settings.aiRoutingMode}
                         onChange={(event) => updateTenantBrainSetting(tenant.id, 'aiRoutingMode', event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-indigo-500"
+                        className="w-full rounded-xl border border-subtle bg-surface px-3 py-2.5 text-sm font-semibold text-primary outline-none focus-ring"
                       >
                         <option value="ai_first">AI first, human fallback</option>
                         <option value="human_first">Human first</option>
                         <option value="business_hours">AI after hours only</option>
                       </select>
                     </label>
-                    <label className="block rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <label className="block rounded-2xl border border-subtle bg-surface/30 p-4 hover:bg-surface transition-colors">
+                      <span className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
                         <Database className="h-3.5 w-3.5" />
                         POS Endpoint
                       </span>
                       <input
                         value={settings.posEndpoint}
                         onChange={(event) => updateTenantBrainSetting(tenant.id, 'posEndpoint', event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs outline-none focus:border-indigo-500"
+                        className="w-full rounded-xl border border-subtle bg-surface px-3 py-2.5 font-mono text-xs text-primary outline-none focus-ring placeholder:text-muted/50"
                         placeholder="https://pasalos.example.com/sync"
                       />
                     </label>
-                    <label className="block rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <label className="block rounded-2xl border border-subtle bg-surface/30 p-4 hover:bg-surface transition-colors">
+                      <span className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted">
                         <ShieldCheck className="h-3.5 w-3.5" />
                         Ticket SLA
                       </span>
                       <input
                         value={settings.ticketSla}
                         onChange={(event) => updateTenantBrainSetting(tenant.id, 'ticketSla', event.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-indigo-500"
+                        className="w-full rounded-xl border border-subtle bg-surface px-3 py-2.5 text-sm font-semibold text-primary outline-none focus-ring placeholder:text-muted/50"
                         placeholder="15 minutes"
                       />
                     </label>
                   </div>
                 </div>
-                <div className="mt-3 flex justify-end">
+                <div className="mt-4 flex justify-end">
                   <button
                     type="button"
-                    className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-slate-200 hover:bg-slate-800"
+                    onClick={handleSaveBrainSettings}
+                    className="rounded-xl bg-surface border border-subtle px-4 py-2 text-sm font-bold text-primary shadow-lg hover:bg-hover transition-colors"
                   >
                     Save Brain Settings
                   </button>
@@ -682,7 +709,7 @@ const SuperAdminDashboard = () => {
             );
           })}
           {tenants.length === 0 && !loading && (
-            <div className="p-12 text-center text-slate-400">
+            <div className="p-12 text-center text-muted font-medium bg-surface/30">
               No tenants available for brain configuration.
             </div>
           )}
@@ -691,25 +718,25 @@ const SuperAdminDashboard = () => {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="font-bold text-slate-900">Register New Customer</h3>
+        <div className="fixed inset-0 bg-deep/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-elevated border border-subtle rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="px-6 py-5 border-b border-subtle flex justify-between items-center bg-surface/50">
+              <h3 className="font-extrabold text-primary text-lg">Register New Customer</h3>
             </div>
-            <form onSubmit={handleCreateTenant} className="p-6 space-y-4">
+            <form onSubmit={handleCreateTenant} className="p-6 space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Business Name</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Business Name</label>
                 <input
                   type="text"
                   required
                   value={newTenantName}
                   onChange={(e) => setNewTenantName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
+                  className="w-full px-4 py-3 bg-surface border border-subtle rounded-xl focus-ring outline-none transition-all text-sm text-primary placeholder:text-muted/50"
                   placeholder="e.g. Acme Corporation"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Provision Platforms</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Provision Platforms</label>
                 <div className="grid grid-cols-2 gap-2">
                   {PLATFORM_OPTIONS.map((platform) => {
                     const Icon = platform.icon;
@@ -721,8 +748,8 @@ const SuperAdminDashboard = () => {
                         onClick={() => toggleNewTenantPlatform(platform.id)}
                         className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all ${
                           enabled
-                            ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                            : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-white'
+                            ? 'border-indigo-500/30 bg-indigo-500/10 text-indigo-400 glow-indigo'
+                            : 'border-subtle bg-surface text-secondary hover:bg-hover'
                         }`}
                       >
                         <Icon className="h-4 w-4" />
@@ -732,9 +759,9 @@ const SuperAdminDashboard = () => {
                   })}
                 </div>
               </div>
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex gap-3 mb-4">
-                <Key className="w-5 h-5 text-blue-600 shrink-0" />
-                <p className="text-xs text-blue-700 leading-relaxed">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex gap-3 mb-4">
+                <Key className="w-5 h-5 text-blue-400 shrink-0" />
+                <p className="text-xs text-secondary leading-relaxed">
                   Creating a store will generate a unique tenant ID. You can later assign an administrator email to this store.
                 </p>
               </div>
@@ -742,13 +769,13 @@ const SuperAdminDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-subtle text-secondary font-bold rounded-xl hover:bg-hover hover:text-primary transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                  className="flex-1 px-4 py-3 bg-accent text-deep font-bold rounded-xl hover:bg-accent-dim shadow-[0_0_15px_rgba(0,212,170,0.2)] transition-all"
                 >
                   Create Store
                 </button>

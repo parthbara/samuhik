@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ALL_USERS_WITH_TENANTS, ALL_TENANTS, DEMO_USERS } from '../lib/mockData';
-import { UserPlus, Trash2, Shield, User, X, Search, Building2 } from 'lucide-react';
-
-const DEMO_MODE = true;
+import { DEMO_MODE } from '../lib/config';
+import { UserPlus, Trash2, Shield, User, X, Building2 } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
 
 const UserManagement = () => {
   const { profile } = useAuth();
+  const { addToast } = useToast();
   const [users, setUsers] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +40,6 @@ const UserManagement = () => {
       return;
     }
 
-    // Real Supabase path
     const { supabase } = await import('../lib/supabase');
     let query = supabase.from('users').select('*, tenants(name)');
     
@@ -82,10 +82,10 @@ const UserManagement = () => {
       setShowAddModal(false);
       setNewEmail('');
       setNewName('');
+      addToast('Team member added successfully', 'success');
       return;
     }
 
-    // Real Supabase path
     const { supabase } = await import('../lib/supabase');
     const { error } = await supabase.from('users').insert({
       email: newEmail,
@@ -95,12 +95,13 @@ const UserManagement = () => {
     });
 
     if (error) {
-      alert('Error adding user: ' + error.message);
+      addToast('Error adding user: ' + error.message, 'error');
     } else {
       setShowAddModal(false);
       setNewEmail('');
       setNewName('');
       fetchUsers();
+      addToast('Team member added successfully', 'success');
     }
   };
 
@@ -109,76 +110,82 @@ const UserManagement = () => {
 
     if (DEMO_MODE) {
       setUsers(prev => prev.filter(u => u.id !== id));
+      addToast('Team member removed', 'info');
       return;
     }
 
     const { supabase } = await import('../lib/supabase');
     const { error } = await supabase.from('users').delete().eq('id', id);
-    if (error) alert('Error removing user: ' + error.message);
-    else fetchUsers();
+    if (error) addToast('Error removing user: ' + error.message, 'error');
+    else {
+      fetchUsers();
+      addToast('Team member removed', 'info');
+    }
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-8 max-w-6xl mx-auto relative">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+
+      <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Team Management</h2>
-          <p className="text-slate-500 text-sm mt-1">
+          <h2 className="text-3xl font-extrabold text-primary tracking-tight">Team Management</h2>
+          <p className="text-secondary text-sm mt-1 font-medium">
             {profile.role === 'super_admin' ? 'Manage all users across the platform.' : 'Manage staff access and roles for your store.'}
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold transition-all shadow-lg shadow-indigo-100"
+          className="flex items-center gap-2 bg-accent hover:bg-accent-dim text-deep px-4 py-2 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(0,212,170,0.3)] hover:shadow-[0_0_20px_rgba(0,212,170,0.5)]"
         >
           <UserPlus className="w-4 h-4" />
           Add Member
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="relative z-10 glass-card rounded-2xl shadow-2xl overflow-hidden border border-subtle">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Member</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Store</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500">Role</th>
-              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+            <tr className="bg-surface/50 border-b border-subtle">
+              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted">Member</th>
+              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted">Store</th>
+              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted">Role</th>
+              <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-muted text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+          <tbody className="divide-y divide-subtle">
+            {users.map((u, idx) => (
+              <tr key={u.id} className={`transition-colors hover:bg-hover/50 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-surface/30'}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs border border-slate-200">
+                    <div className="w-10 h-10 rounded-xl bg-surface border border-subtle flex items-center justify-center text-accent font-bold text-sm shadow-sm">
                       {u.name?.charAt(0) || u.email.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{u.name || 'Pending Invitation'}</p>
-                      <p className="text-xs text-slate-400">{u.email}</p>
+                      <p className="text-sm font-semibold text-primary">{u.name || 'Pending Invitation'}</p>
+                      <p className="text-xs text-secondary mt-0.5">{u.email}</p>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
+                  <div className="flex items-center gap-2 text-xs text-secondary font-medium">
                     <Building2 className="w-3.5 h-3.5" />
                     {u.tenants?.name || 'Platform (Super Admin)'}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    u.role === 'super_admin' ? 'bg-purple-50 text-purple-600' : (u.role === 'admin' ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600')
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    u.role === 'super_admin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : (u.role === 'admin' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-surface text-secondary border-subtle')
                   }`}>
                     {u.role === 'super_admin' ? <Shield className="w-3 h-3" /> : (u.role === 'admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />)}
                     {u.role.replace('_', ' ')}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-right text-slate-400">
+                <td className="px-6 py-4 text-right text-muted">
                   {u.supabase_uid !== profile.supabase_uid && (
                     <button 
                       onClick={() => handleRemove(u.id)}
-                      className="hover:text-rose-500 p-2 transition-colors"
+                      className="hover:text-rose-400 hover:bg-rose-500/10 p-2 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -189,28 +196,28 @@ const UserManagement = () => {
           </tbody>
         </table>
         {users.length === 0 && !loading && (
-          <div className="p-12 text-center text-slate-400">No team members found.</div>
+          <div className="p-12 text-center text-muted font-medium bg-surface/30">No team members found.</div>
         )}
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="font-bold text-slate-900">Add Team Member</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 bg-deep/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-elevated border border-subtle rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
+            <div className="px-6 py-5 border-b border-subtle flex justify-between items-center bg-surface/50">
+              <h3 className="font-extrabold text-primary text-lg">Add Team Member</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-muted hover:text-primary transition-colors p-1 rounded-lg hover:bg-hover">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAdd} className="p-6 space-y-4">
+            <form onSubmit={handleAdd} className="p-6 space-y-5">
               {profile.role === 'super_admin' && (
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Assign to Store</label>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Assign to Store</label>
                   <select
                     required
                     value={newTenantId}
                     onChange={(e) => setNewTenantId(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium"
+                    className="w-full px-4 py-3 bg-surface border border-subtle rounded-xl focus-ring outline-none transition-all text-sm font-medium text-primary"
                   >
                     <option value="">Select a store...</option>
                     <option value="NULL">Platform (No Store)</option>
@@ -221,33 +228,33 @@ const UserManagement = () => {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Full Name</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Full Name</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
+                  className="w-full px-4 py-3 bg-surface border border-subtle rounded-xl focus-ring outline-none transition-all text-sm text-primary placeholder:text-muted/50"
                   placeholder="John Doe"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Email Address</label>
                 <input
                   type="email"
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm"
+                  className="w-full px-4 py-3 bg-surface border border-subtle rounded-xl focus-ring outline-none transition-all text-sm text-primary placeholder:text-muted/50"
                   placeholder="john@example.com"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Role</label>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Role</label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-medium"
+                  className="w-full px-4 py-3 bg-surface border border-subtle rounded-xl focus-ring outline-none transition-all text-sm font-medium text-primary"
                 >
                   <option value="agent">Staff / Agent</option>
                   <option value="admin">Store Admin</option>
@@ -258,13 +265,13 @@ const UserManagement = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-subtle text-secondary font-bold rounded-xl hover:bg-hover hover:text-primary transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                  className="flex-1 px-4 py-3 bg-accent text-deep font-bold rounded-xl hover:bg-accent-dim shadow-[0_0_15px_rgba(0,212,170,0.2)] transition-all"
                 >
                   Save Member
                 </button>

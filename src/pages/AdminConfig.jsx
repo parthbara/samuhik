@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import {
   AlertCircle,
   Bot,
@@ -24,7 +25,7 @@ const CHANNELS = [
     label: 'WhatsApp',
     icon: MessageCircle,
     tone: 'emerald',
-    accent: 'border-emerald-200 bg-emerald-50/50',
+    accent: 'border-emerald-500/20 bg-emerald-500/5',
     copy: 'Primary channel for Nepali retail and wholesale buyers.',
     placeholder: 'https://remote-server.example.com/webhooks/whatsapp',
   },
@@ -33,7 +34,7 @@ const CHANNELS = [
     label: 'Instagram',
     icon: Camera,
     tone: 'rose',
-    accent: 'border-rose-200 bg-rose-50/50',
+    accent: 'border-rose-500/20 bg-rose-500/5',
     copy: 'Capture product inquiries, story replies, and catalogue DMs.',
     placeholder: 'https://remote-server.example.com/webhooks/instagram',
   },
@@ -42,7 +43,7 @@ const CHANNELS = [
     label: 'Messenger',
     icon: MessageSquareText,
     tone: 'blue',
-    accent: 'border-blue-200 bg-blue-50/50',
+    accent: 'border-blue-500/20 bg-blue-500/5',
     copy: 'Unify Facebook page messages and follow-up support.',
     placeholder: 'https://remote-server.example.com/webhooks/messenger',
   },
@@ -51,7 +52,7 @@ const CHANNELS = [
     label: 'TikTok',
     icon: Music2,
     tone: 'slate',
-    accent: 'border-slate-200 bg-slate-50',
+    accent: 'border-subtle bg-surface/50',
     copy: 'Prepare for TikTok Shop comments, leads, and creator messages.',
     placeholder: 'https://remote-server.example.com/webhooks/tiktok',
   },
@@ -61,14 +62,15 @@ const makeInitialChannelState = () =>
   CHANNELS.reduce((state, channel) => ({
     ...state,
     [channel.id]: {
-      enabled: channel.id === 'whatsapp',
-      webhookUrl: '',
-      connected: false,
+      enabled: channel.id !== 'tiktok',
+      webhookUrl: channel.id !== 'tiktok' ? `https://remote-server.example.com/webhooks/${channel.id}` : '',
+      connected: channel.id !== 'tiktok',
     },
   }), {});
 
 const AdminConfig = () => {
   const { profile } = useAuth();
+  const { addToast } = useToast();
   const [channelState, setChannelState] = useState(makeInitialChannelState);
   const [posEndpoint, setPosEndpoint] = useState('');
   const [posSyncState, setPosSyncState] = useState('idle');
@@ -100,52 +102,65 @@ const AdminConfig = () => {
       connected: Boolean(channel.webhookUrl.trim()),
       enabled: true,
     });
+    
+    addToast(`${CHANNELS.find(c => c.id === channelId).label} webhook connected successfully.`, 'success');
   };
 
   const syncInventory = () => {
     setPosSyncState('syncing');
-    setTimeout(() => setPosSyncState('synced'), 900);
+    setTimeout(() => {
+      setPosSyncState('synced');
+      addToast('Inventory synced successfully from POS.', 'success');
+    }, 900);
+  };
+
+  const saveRoutingRules = () => {
+    addToast('AI routing rules saved.', 'success');
   };
 
   return (
-    <div className="mx-auto max-w-7xl p-6 lg:p-8">
-      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8 relative">
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+
+      <div className="relative z-10 mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">Store Admin</p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-900">Omnichannel Settings</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="text-xs font-bold uppercase tracking-wider text-accent">Store Admin</p>
+          <h2 className="mt-1 text-3xl font-extrabold text-primary tracking-tight">Omnichannel Settings</h2>
+          <p className="mt-1 text-sm text-secondary font-medium">
             Connect customer channels, control AI routing, and sync stock from PasalOS or a custom POS.
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+        <div className="glass-card rounded-2xl px-5 py-4 shadow-lg">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 border border-accent/20 text-accent glow-accent">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-900">{profile?.tenants?.name || 'Store workspace'}</p>
-              <p className="text-xs text-slate-500">Tenant ID: {profile?.tenant_id || 'not assigned'}</p>
+              <p className="text-sm font-bold text-primary">{profile?.tenants?.name || 'Store workspace'}</p>
+              <p className="text-xs text-muted font-mono mt-0.5">ID: {profile?.tenant_id || 'not assigned'}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Connected Channels</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{connectedCount}</p>
+      <div className="relative z-10 mb-8 grid gap-4 md:grid-cols-3">
+        <div className="glass-card rounded-2xl p-5 shadow-lg stat-card">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Connected Channels</p>
+          <p className="text-4xl font-black text-primary">{connectedCount}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">AI Routing</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-600">{routingRules.aiFirst ? 'On' : 'Off'}</p>
+        <div className="glass-card rounded-2xl p-5 shadow-lg stat-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-accent rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">AI Routing</p>
+          <p className="text-4xl font-black text-accent">{routingRules.aiFirst ? 'Active' : 'Paused'}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">POS Sync</p>
-          <p className="mt-2 text-3xl font-bold text-amber-600">{posSyncState === 'synced' ? 'Ready' : 'Draft'}</p>
+        <div className="glass-card rounded-2xl p-5 shadow-lg stat-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-warm rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">POS Sync</p>
+          <p className="text-4xl font-black text-warm">{posSyncState === 'synced' ? 'Ready' : 'Draft'}</p>
         </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="relative z-10 grid gap-6">
         <SectionCard icon={Plug} title="Channel Connections" eyebrow="Inbox inputs" tone="indigo">
           <div className="grid gap-4 xl:grid-cols-2">
             {CHANNELS.map((channel) => {
@@ -153,37 +168,40 @@ const AdminConfig = () => {
               const state = channelState[channel.id];
 
               return (
-                <article key={channel.id} className={`rounded-2xl border p-4 ${channel.accent}`}>
+                <article key={channel.id} className={`rounded-2xl border p-5 transition-all hover:bg-surface/80 ${channel.accent}`}>
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-slate-800 shadow-sm">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface border border-subtle text-primary shadow-sm">
                         <Icon className="h-5 w-5" />
                       </span>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900">{channel.label}</h4>
-                        <p className="mt-1 text-xs leading-5 text-slate-600">{channel.copy}</p>
+                        <h4 className="text-sm font-bold text-primary">{channel.label}</h4>
+                        <p className="mt-1 text-xs leading-5 text-secondary">{channel.copy}</p>
                       </div>
                     </div>
                     <ToggleSwitch
                       checked={state.enabled}
-                      onChange={(checked) => updateChannel(channel.id, { enabled: checked })}
+                      onChange={(checked) => {
+                        updateChannel(channel.id, { enabled: checked });
+                        addToast(`${channel.label} ${checked ? 'enabled' : 'disabled'}.`, 'info');
+                      }}
                     />
                   </div>
                   <label className="block">
-                    <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
                       Incoming Webhook URL
                     </span>
                     <input
                       type="url"
                       value={state.webhookUrl}
                       onChange={(event) => updateChannel(channel.id, { webhookUrl: event.target.value, connected: false })}
-                      className="w-full rounded-xl border border-white/80 bg-white px-4 py-2.5 font-mono text-sm text-slate-800 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                      className="w-full rounded-xl border border-subtle bg-surface px-4 py-2.5 font-mono text-sm text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
                       placeholder={channel.placeholder}
                     />
                   </label>
                   <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      state.connected ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-slate-500 ring-1 ring-slate-200'
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${
+                      state.connected ? 'bg-accent/10 text-accent border-accent/20' : 'bg-surface text-secondary border-subtle'
                     }`}>
                       {state.connected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Clock3 className="h-3.5 w-3.5" />}
                       {state.connected ? 'Connected' : 'Not connected'}
@@ -192,7 +210,7 @@ const AdminConfig = () => {
                       type="button"
                       onClick={() => connectChannel(channel.id)}
                       disabled={!state.webhookUrl.trim()}
-                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-slate-200 hover:bg-slate-800 disabled:bg-slate-300 disabled:shadow-none"
+                      className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-deep hover:bg-accent-dim disabled:bg-surface disabled:text-muted disabled:border disabled:border-subtle transition-all"
                     >
                       Connect
                     </button>
@@ -206,7 +224,7 @@ const AdminConfig = () => {
         <SectionCard icon={RefreshCw} title="External POS Integration" eyebrow="Store-owned stock sync" tone="amber">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
-              <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
                 PasalOS / Custom POS Webhook Endpoint
               </label>
               <input
@@ -216,7 +234,7 @@ const AdminConfig = () => {
                   setPosEndpoint(event.target.value);
                   setPosSyncState('idle');
                 }}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-sm text-slate-800 outline-none transition-all focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10"
+                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
                 placeholder="https://pasalos.example.com/webhooks/inventory"
               />
             </div>
@@ -224,30 +242,28 @@ const AdminConfig = () => {
               type="button"
               onClick={syncInventory}
               disabled={!posEndpoint.trim() || posSyncState === 'syncing'}
-              className="h-12 rounded-xl bg-amber-600 px-6 text-sm font-bold text-white shadow-lg shadow-amber-100 hover:bg-amber-700 disabled:bg-slate-300 disabled:shadow-none"
+              className="h-12 rounded-xl bg-warm px-6 text-sm font-bold text-deep hover:brightness-110 disabled:bg-surface disabled:text-muted disabled:border disabled:border-subtle transition-all"
             >
               {posSyncState === 'syncing' ? 'Syncing...' : 'Sync Inventory'}
             </button>
           </div>
-          <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4">
-            <div className="flex gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-              <p className="text-sm leading-6 text-amber-900">
-                Store Admins can manage their daily POS sync here. Super Admins can also audit and override tenant-level POS policy from the platform console.
-              </p>
-            </div>
+          <div className="mt-4 rounded-xl border border-warm/20 bg-warm/5 p-4 flex gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warm" />
+            <p className="text-sm leading-6 text-secondary">
+              Store Admins can manage their daily POS sync here. Super Admins can also audit and override tenant-level POS policy from the platform console.
+            </p>
           </div>
           {posSyncState === 'synced' && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" />
+            <div className="mt-4 flex items-center gap-2 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm font-semibold text-primary">
+              <CheckCircle2 className="h-4 w-4 text-accent" />
               Inventory sync simulated. This is ready for PasalOS API wiring tomorrow.
             </div>
           )}
         </SectionCard>
 
         <SectionCard icon={Route} title="AI Routing & Ticket Rules" eyebrow="Handover policy" tone="blue">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="grid gap-4 md:grid-cols-2 mb-4">
+            <div className="rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
               <ToggleSwitch
                 checked={routingRules.aiFirst}
                 onChange={(checked) => setRoutingRules((current) => ({ ...current, aiFirst: checked }))}
@@ -255,7 +271,7 @@ const AdminConfig = () => {
                 description="Let the LLM draft the first response before a human takes over."
               />
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
               <ToggleSwitch
                 checked={routingRules.routeAngryCustomers}
                 onChange={(checked) => setRoutingRules((current) => ({ ...current, routeAngryCustomers: checked }))}
@@ -263,7 +279,7 @@ const AdminConfig = () => {
                 description="Route angry or human-request messages directly to staff."
               />
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
               <ToggleSwitch
                 checked={routingRules.businessHoursOnly}
                 onChange={(checked) => setRoutingRules((current) => ({ ...current, businessHoursOnly: checked }))}
@@ -271,7 +287,7 @@ const AdminConfig = () => {
                 description="Pause AI outside store hours and create follow-up tickets."
               />
             </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
               <ToggleSwitch
                 checked={routingRules.autoCreateTicket}
                 onChange={(checked) => setRoutingRules((current) => ({ ...current, autoCreateTicket: checked }))}
@@ -280,20 +296,13 @@ const AdminConfig = () => {
               />
             </div>
           </div>
-        </SectionCard>
-
-        <SectionCard icon={Bot} title="Readiness Checklist" eyebrow="Tomorrow wiring" tone="emerald">
-          <div className="grid gap-3 md:grid-cols-3">
-            {[
-              'Supabase tenants, conversations, messages, and inventory tables',
-              'Webhook receiver for incoming omnichannel payloads',
-              'LLM context builder with tenant prompt and POS inventory snapshot',
-            ].map((item) => (
-              <div key={item} className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-                <ShieldCheck className="mb-3 h-5 w-5 text-emerald-600" />
-                <p className="text-sm font-semibold leading-6 text-emerald-950">{item}</p>
-              </div>
-            ))}
+          <div className="flex justify-end">
+             <button
+              onClick={saveRoutingRules}
+              className="rounded-xl bg-surface border border-subtle px-6 py-2.5 text-sm font-bold text-primary hover:bg-hover transition-all"
+            >
+              Save Rules
+            </button>
           </div>
         </SectionCard>
       </div>
