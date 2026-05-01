@@ -13,13 +13,13 @@ const MessageBubble = ({ message, perspective = "admin" }) => {
         className={`max-w-[86%] rounded-2xl px-4 py-3 shadow-sm ${
           isMine
             ? isCustomer
-              ? "rounded-tr-md bg-indigo-600 text-white"
-              : "rounded-tr-md bg-slate-900 text-white"
-            : "rounded-tl-md bg-white text-slate-900 ring-1 ring-slate-200"
+              ? "rounded-tr-md bg-accent text-deep"
+              : "rounded-tr-md bg-elevated border border-subtle text-primary"
+            : "rounded-tl-md bg-surface border border-subtle text-primary"
         }`}
       >
         {!isCustomer && perspective === "admin" && (
-          <div className={`mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide ${isAi ? "text-indigo-200" : "text-slate-300"}`}>
+          <div className={`mb-2 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide ${isAi ? "text-accent" : "text-indigo-400"}`}>
             {isAi ? <Bot className="h-3.5 w-3.5" /> : <UserRoundCheck className="h-3.5 w-3.5" />}
             {isAi ? "Samuhik AI" : "Human Agent"}
           </div>
@@ -27,9 +27,9 @@ const MessageBubble = ({ message, perspective = "admin" }) => {
         <p className="text-sm leading-6">{message.text}</p>
         <p
           className={`mt-1 text-right text-[11px] ${
-            isMine
-              ? "text-indigo-100"
-              : "text-slate-400"
+            isMine && isCustomer
+              ? "text-deep/70"
+              : "text-muted"
           }`}
         >
           {message.time}

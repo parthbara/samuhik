@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-// ── Demo Mode Toggle (must match AuthContext) ───────────────────────────────
-const DEMO_MODE = true;
+import { DEMO_MODE } from '../lib/config';
+import { DEMO_CONVERSATIONS, DEMO_INVENTORY } from '../lib/mockData';
 
 const DataContext = createContext();
 
@@ -22,10 +22,19 @@ const DemoDataProvider = ({ children }) => {
       return;
     }
 
-    // Simulate network latency
+    // Simulate network latency then load rich demo data
     const timer = setTimeout(() => {
-      setConversations([]);
-      setInventory([]);
+      // Filter by tenant for non-super admins
+      if (profile.role === 'super_admin') {
+        setConversations([...DEMO_CONVERSATIONS]);
+        setInventory([...DEMO_INVENTORY]);
+      } else if (profile.tenant_id) {
+        setConversations(DEMO_CONVERSATIONS.filter(c => c.tenant_id === profile.tenant_id));
+        setInventory(DEMO_INVENTORY.filter(i => i.tenant_id === profile.tenant_id));
+      } else {
+        setConversations([]);
+        setInventory([]);
+      }
       setLoading(false);
     }, 400);
 
@@ -51,8 +60,13 @@ const DemoDataProvider = ({ children }) => {
   };
 
   const refreshData = () => {
-    setConversations([]);
-    setInventory([]);
+    if (profile?.role === 'super_admin') {
+      setConversations([...DEMO_CONVERSATIONS]);
+      setInventory([...DEMO_INVENTORY]);
+    } else if (profile?.tenant_id) {
+      setConversations(DEMO_CONVERSATIONS.filter(c => c.tenant_id === profile.tenant_id));
+      setInventory(DEMO_INVENTORY.filter(i => i.tenant_id === profile.tenant_id));
+    }
   };
 
   return (
