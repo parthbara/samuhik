@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Plus, Bot, Phone, MoreHorizontal, UserRoundCheck, AlertTriangle } from 'lucide-react';
+import { Send, Plus, Bot, Phone, MoreHorizontal, UserRoundCheck, AlertTriangle, Radio } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import Avatar from './Avatar';
 
-const ChatWindow = ({ conversation, onHumanReply, onTakeOver }) => {
+const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) => {
   const [draft, setDraft] = useState("");
   const [aiAutoReplyEnabled, setAiAutoReplyEnabled] = useState(true);
   const scrollRef = useRef(null);
@@ -54,6 +54,14 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onDemoInbound}
+            className="flex items-center gap-2 rounded-lg border border-subtle bg-elevated px-3 py-2 text-xs font-bold text-secondary transition-colors hover:bg-hover hover:text-primary"
+          >
+            <Radio className="h-4 w-4" />
+            Simulate Inbound
+          </button>
           <button
             type="button"
             onClick={() => setAiAutoReplyEnabled((current) => !current)}

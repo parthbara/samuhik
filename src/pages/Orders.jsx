@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { ALL_TENANTS } from '../lib/mockData';
 import {
   ArrowDown,
@@ -92,6 +93,7 @@ const SortableHeader = ({ label, sortKey, currentSort, onSort }) => {
 
 const Orders = () => {
   const { profile } = useAuth();
+  const { orders } = useData();
   const isSuperAdmin = profile?.role === 'super_admin';
   const tenants = isSuperAdmin ? ALL_TENANTS : [];
 
@@ -110,11 +112,12 @@ const Orders = () => {
   };
 
   const baseRows = useMemo(() => {
+    const rows = [...(orders || []), ...ORDER_ROWS];
     if (!isSuperAdmin && profile?.tenant_id) {
-      return ORDER_ROWS.filter((r) => r.tenant_id === profile.tenant_id);
+      return rows.filter((r) => r.tenant_id === profile.tenant_id);
     }
-    return ORDER_ROWS;
-  }, [isSuperAdmin, profile?.tenant_id]);
+    return rows;
+  }, [isSuperAdmin, profile?.tenant_id, orders]);
 
   const filteredRows = useMemo(() => {
     let rows = baseRows.filter((row) => {
@@ -151,7 +154,7 @@ const Orders = () => {
   const tenantName = (id) => ALL_TENANTS.find((t) => t.id === id)?.name || id;
 
   const handleExportCSV = () => {
-    const headers = ['Ticket No', 'Order ID', 'Store', 'Customer', 'Channel', 'Item', 'Quantity', 'Unit Price', 'Total Price', 'Source', 'Status', 'Assignee', 'Resolution', 'Date'];
+    const headers = ['Ticket No', 'Order ID', 'Store', 'Customer', 'Phone', 'Address', 'Channel', 'Item', 'Quantity', 'Unit Price', 'Total Price', 'Source', 'Status', 'Assignee', 'Resolution', 'Date'];
     const csvContent = [
       headers.join(','),
       ...filteredRows.map(row => [
@@ -159,6 +162,8 @@ const Orders = () => {
         row.order_id,
         tenantName(row.tenant_id),
         `"${row.customer}"`,
+        `"${row.phone || '-'}"`,
+        `"${row.address || '-'}"`,
         row.channel,
         `"${row.item}"`,
         row.quantity,
@@ -309,6 +314,8 @@ const Orders = () => {
                 <SortableHeader label="Order" sortKey="order_id" currentSort={sort} onSort={handleSort} />
                 {isSuperAdmin && <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Store</th>}
                 <SortableHeader label="Customer" sortKey="customer" currentSort={sort} onSort={handleSort} />
+                <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Contact</th>
+                <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Location</th>
                 <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Channel</th>
                 <SortableHeader label="Item" sortKey="item" currentSort={sort} onSort={handleSort} />
                 <SortableHeader label="Qty" sortKey="quantity" currentSort={sort} onSort={handleSort} />
@@ -334,6 +341,8 @@ const Orders = () => {
                     </td>
                   )}
                   <td className="px-4 py-3.5 font-semibold text-primary">{row.customer}</td>
+                  <td className="px-4 py-3.5 text-xs text-secondary">{row.phone || '-'}</td>
+                  <td className="px-4 py-3.5 text-xs text-secondary max-w-[120px] truncate" title={row.address || '-'}>{row.address || '-'}</td>
                   <td className="px-4 py-3.5">
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-secondary">
                       <span className={`h-2 w-2 rounded-full ${channelDotColor[row.channel] || 'bg-slate-400'}`} />

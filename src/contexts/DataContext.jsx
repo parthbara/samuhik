@@ -1,7 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { DEMO_MODE } from '../lib/config';
-import { DEMO_CONVERSATIONS, DEMO_INVENTORY } from '../lib/mockData';
+import {
+  DEMO_CONVERSATIONS_KEY,
+  DEMO_INVENTORY_KEY,
+  DEMO_ORDERS_KEY,
+  DEMO_SYNC_EVENT,
+  appendDemoMessage,
+  loadDemoConversations,
+  loadDemoInventory,
+  loadDemoOrders,
+  resetDemoConversations,
+  updateDemoConversation,
+} from '../lib/demoStore';
 
 const DataContext = createContext();
 
@@ -12,28 +23,46 @@ const DemoDataProvider = ({ children }) => {
   const { profile } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [inventory, setInventory] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const filterForProfile = (items) => {
+    if (profile?.role === 'super_admin') return items;
+    if (profile?.role === 'customer') return items.filter(c => c.customerUserId === profile.id);
+    if (profile?.tenant_id) return items.filter(c => c.tenant_id === profile.tenant_id);
+    return [];
+  };
 
   useEffect(() => {
     if (!profile) {
       setConversations([]);
       setInventory([]);
+      setOrders([]);
       setLoading(false);
       return;
     }
 
     // Simulate network latency then load rich demo data
     const timer = setTimeout(() => {
-      // Filter by tenant for non-super admins
+      const storedConversations = loadDemoConversations();
+      const storedInventory = loadDemoInventory();
+      const storedOrders = loadDemoOrders();
       if (profile.role === 'super_admin') {
-        setConversations([...DEMO_CONVERSATIONS]);
-        setInventory([...DEMO_INVENTORY]);
+        setConversations(storedConversations);
+        setInventory(storedInventory);
+        setOrders(storedOrders);
+      } else if (profile.role === 'customer') {
+        setConversations(storedConversations.filter(c => c.customerUserId === profile.id));
+        setInventory(storedInventory.filter(i => i.tenant_id === profile.tenant_id));
+        setOrders(storedOrders.filter(o => o.tenant_id === profile.tenant_id));
       } else if (profile.tenant_id) {
-        setConversations(DEMO_CONVERSATIONS.filter(c => c.tenant_id === profile.tenant_id));
-        setInventory(DEMO_INVENTORY.filter(i => i.tenant_id === profile.tenant_id));
+        setConversations(storedConversations.filter(c => c.tenant_id === profile.tenant_id));
+        setInventory(storedInventory.filter(i => i.tenant_id === profile.tenant_id));
+        setOrders(storedOrders.filter(o => o.tenant_id === profile.tenant_id));
       } else {
         setConversations([]);
         setInventory([]);
+        setOrders([]);
       }
       setLoading(false);
     }, 400);
@@ -41,32 +70,72 @@ const DemoDataProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, [profile]);
 
+  useEffect(() => {
+    if (!profile) return;
+    const sync = () => {
+      const storedInventory = loadDemoInventory();
+      const storedOrders = loadDemoOrders();
+      setConversations(filterForProfile(loadDemoConversations()));
+      setInventory(
+        profile.role === 'super_admin'
+          ? storedInventory
+          : storedInventory.filter(i => i.tenant_id === profile.tenant_id)
+      );
+      setOrders(
+        profile.role === 'super_admin'
+          ? storedOrders
+          : storedOrders.filter(o => o.tenant_id === profile.tenant_id)
+      );
+    };
+    const onStorage = (event) => {
+      if ([DEMO_CONVERSATIONS_KEY, DEMO_INVENTORY_KEY, DEMO_ORDERS_KEY].includes(event.key)) sync();
+    };
+
+    window.addEventListener(DEMO_SYNC_EVENT, sync);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener(DEMO_SYNC_EVENT, sync);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [profile]);
+
   const addMessage = async (chatId, message) => {
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === chatId
-          ? { ...c, messages: [...c.messages, message], time: message.time }
-          : c
-      )
-    );
+    setConversations(filterForProfile(appendDemoMessage(chatId, message)));
   };
 
   const updateConversation = async (chatId, updates) => {
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === chatId ? { ...c, ...updates } : c
-      )
-    );
+    setConversations(filterForProfile(updateDemoConversation(chatId, updates)));
   };
 
   const refreshData = () => {
+    const storedConversations = loadDemoConversations();
+    const storedInventory = loadDemoInventory();
+    const storedOrders = loadDemoOrders();
     if (profile?.role === 'super_admin') {
-      setConversations([...DEMO_CONVERSATIONS]);
-      setInventory([...DEMO_INVENTORY]);
+      setConversations(storedConversations);
+      setInventory(storedInventory);
+      setOrders(storedOrders);
+    } else if (profile?.role === 'customer') {
+      setConversations(storedConversations.filter(c => c.customerUserId === profile.id));
+      setInventory(storedInventory.filter(i => i.tenant_id === profile.tenant_id));
+      setOrders(storedOrders.filter(o => o.tenant_id === profile.tenant_id));
     } else if (profile?.tenant_id) {
-      setConversations(DEMO_CONVERSATIONS.filter(c => c.tenant_id === profile.tenant_id));
-      setInventory(DEMO_INVENTORY.filter(i => i.tenant_id === profile.tenant_id));
+      setConversations(storedConversations.filter(c => c.tenant_id === profile.tenant_id));
+      setInventory(storedInventory.filter(i => i.tenant_id === profile.tenant_id));
+      setOrders(storedOrders.filter(o => o.tenant_id === profile.tenant_id));
     }
+  };
+
+  const resetDemo = () => {
+    const next = resetDemoConversations();
+    setConversations(filterForProfile(next));
+    setInventory(
+      profile?.role === 'super_admin'
+        ? loadDemoInventory()
+        : loadDemoInventory().filter(i => i.tenant_id === profile?.tenant_id)
+    );
+    setOrders([]);
   };
 
   return (
@@ -74,10 +143,12 @@ const DemoDataProvider = ({ children }) => {
       value={{
         conversations,
         inventory,
+        orders,
         loading,
         addMessage,
         updateConversation,
         refreshData,
+        resetDemo,
       }}
     >
       {children}
@@ -250,6 +321,7 @@ const SupabaseDataProvider = ({ children }) => {
     <DataContext.Provider value={{ 
       conversations, 
       inventory, 
+      orders: [],
       loading,
       addMessage,
       updateConversation,

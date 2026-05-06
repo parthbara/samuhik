@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Bot, ChevronRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { ShieldCheck, Bot, Sparkles, ChevronRight } from 'lucide-react';
 
 const DEMO_ACCOUNTS = [
-  { email: 'parth@samuhik.ai', password: 'demo1234', label: 'Super Admin', color: 'bg-accent' },
-  { email: 'admin@demo.com', password: 'demo1234', label: 'Store Admin', color: 'bg-indigo-400' },
-  { email: 'agent@demo.com', password: 'demo1234', label: 'Agent', color: 'bg-slate-400' },
+  { email: 'admin@demo.com', password: 'demo1234', label: 'Vendor Admin', color: 'bg-blue-700' },
+  { email: 'customer@demo.com', password: 'demo1234', label: 'Customer Tab', color: 'bg-sky-500' },
+  { email: 'agent@demo.com', password: 'demo1234', label: 'Agent', color: 'bg-slate-500' },
+  { email: 'parth@samuhik.ai', password: 'demo1234', label: 'Super Admin', color: 'bg-slate-950' },
 ];
 
 const Login = () => {
@@ -18,10 +19,10 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError('');
     setLoading(true);
     try {
@@ -40,100 +41,88 @@ const Login = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center p-4 bg-deep overflow-hidden">
-      {/* Cinematic background elements */}
-      <div className="absolute inset-0 mesh-gradient opacity-40 animate-gradient-shift"></div>
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent rounded-full mix-blend-screen filter blur-[128px] opacity-20 animate-float"></div>
-      <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-[128px] opacity-20 animate-float" style={{ animationDelay: '1.5s' }}></div>
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
-
-      <div className="relative w-full max-w-md">
-        {/* Logo area */}
-        <div className="flex flex-col items-center mb-10 animate-fade-in">
-          <div className="relative">
-            <div className="absolute inset-0 bg-accent filter blur-xl opacity-40 animate-pulse-glow rounded-full"></div>
-            <div className="relative w-16 h-16 bg-surface border border-subtle rounded-2xl flex items-center justify-center shadow-2xl glass-card">
-              <Bot className="w-8 h-8 text-accent" />
-            </div>
-            <Sparkles className="absolute -top-2 -right-2 w-5 h-5 text-warm animate-bounce" />
+    <div className="flex min-h-screen items-center justify-center bg-deep p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-700 text-white">
+            <Bot className="h-7 w-7" />
           </div>
-          <h1 className="mt-6 text-3xl font-extrabold tracking-tight text-primary">
-            Samuhik <span className="gradient-text">AI</span>
-          </h1>
-          <p className="mt-2 text-sm text-secondary font-medium">Omnichannel Commerce Platform</p>
+          <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-primary">Samuhik AI</h1>
+          <p className="mt-2 text-sm font-medium text-secondary">Omnichannel demo control room</p>
+          <p className="mt-2 max-w-sm text-center text-xs leading-5 text-muted">
+            Use Vendor Admin in one tab and Customer Tab in another tab to watch AI orders reserve stock.
+          </p>
         </div>
-        
-        {/* Login Card */}
-        <div className="glass-card rounded-3xl p-8 shadow-2xl animate-slide-up relative overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-accent to-transparent opacity-50"></div>
-          
+
+        <div className="rounded-xl border border-subtle bg-surface p-6">
           {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-xl mb-6 text-sm flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 shrink-0" />
+            <div className="mb-5 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+              <ShieldCheck className="h-5 w-5 shrink-0" />
               <p>{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Email address</label>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-muted">
+                Email address
+              </label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-surface border border-subtle text-primary px-4 py-3 rounded-xl focus-ring transition-all outline-none font-medium placeholder:text-muted"
-                placeholder="admin@samuhik.ai"
+                onChange={(event) => setEmail(event.target.value)}
+                className="w-full rounded-lg border border-subtle bg-elevated px-4 py-3 font-medium text-primary outline-none placeholder:text-muted focus-ring"
+                placeholder="admin@demo.com"
                 required
               />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-muted">Password</label>
-                <a href="#" className="text-xs font-semibold text-accent hover:text-accent-dim transition-colors">Forgot?</a>
-              </div>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-muted">
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-surface border border-subtle text-primary px-4 py-3 rounded-xl focus-ring transition-all outline-none font-medium placeholder:text-muted tracking-widest"
-                placeholder="••••••••"
+                onChange={(event) => setPassword(event.target.value)}
+                className="w-full rounded-lg border border-subtle bg-elevated px-4 py-3 font-medium tracking-widest text-primary outline-none placeholder:text-muted focus-ring"
+                placeholder="********"
                 required
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full relative group overflow-hidden bg-white text-deep font-bold text-sm py-3.5 rounded-xl transition-all hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full rounded-lg bg-blue-700 py-3.5 text-sm font-bold text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-accent to-indigo-400 opacity-0 group-hover:opacity-10 transition-opacity"></div>
-              <span className="relative flex items-center justify-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 {loading ? 'Authenticating...' : 'Sign In'}
-                {!loading && <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+                {!loading && <ChevronRight className="h-4 w-4" />}
               </span>
             </button>
           </form>
 
-          {/* Demo Credentials Quick-Select */}
-          <div className="mt-8 pt-6 border-t border-subtle">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-4 flex items-center justify-center gap-2">
-              <span className="h-px w-8 bg-border-subtle"></span>
+          <div className="mt-7 border-t border-subtle pt-5">
+            <p className="mb-4 text-center text-[10px] font-bold uppercase tracking-widest text-muted">
               Demo Accounts
-              <span className="h-px w-8 bg-border-subtle"></span>
             </p>
             <div className="grid gap-2">
-              {DEMO_ACCOUNTS.map((acct) => (
+              {DEMO_ACCOUNTS.map((account) => (
                 <button
-                  key={acct.email}
+                  key={account.email}
                   type="button"
-                  onClick={() => handleQuickLogin(acct)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-elevated border border-subtle hover:border-medium rounded-xl transition-all group"
+                  onClick={() => handleQuickLogin(account)}
+                  className="group flex w-full items-center justify-between rounded-lg border border-subtle bg-elevated px-4 py-3 transition-colors hover:border-medium hover:bg-hover"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${acct.color} shadow-[0_0_8px_currentColor] opacity-80 group-hover:opacity-100 transition-opacity`}></span>
-                    <span className="text-sm font-semibold text-secondary group-hover:text-primary transition-colors">{acct.email}</span>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted group-hover:text-accent transition-colors">{acct.label}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${account.color}`} />
+                    <span className="truncate text-sm font-semibold text-secondary group-hover:text-primary">
+                      {account.email}
+                    </span>
+                  </span>
+                  <span className="ml-3 shrink-0 text-[10px] font-bold uppercase tracking-wider text-muted group-hover:text-accent">
+                    {account.label}
+                  </span>
                 </button>
               ))}
             </div>
