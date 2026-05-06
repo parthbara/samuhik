@@ -31,6 +31,28 @@ const Inbox = () => {
     updateConversation(activeChatId, { unread: 0 });
   };
 
+  const handleDemoInbound = () => {
+    if (!activeChatId) return;
+
+    const samples = [
+      "Can someone call me? I need help before ordering.",
+      "Yo product ko wholesale rate kati ho?",
+      "Please send the payment link again.",
+      "Instagram bata order confirm garna milcha?",
+    ];
+    const text = samples[Math.floor(Math.random() * samples.length)];
+
+    addMessage(activeChatId, {
+      from: "customer",
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      text,
+    });
+    updateConversation(activeChatId, {
+      unread: (activeConversation?.unread || 0) + 1,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    });
+  };
+
   const handleTakeOver = () => {
     if (!activeChatId) return;
     
@@ -65,6 +87,7 @@ const Inbox = () => {
         conversation={activeConversation}
         onHumanReply={handleHumanReply}
         onTakeOver={handleTakeOver}
+        onDemoInbound={handleDemoInbound}
       />
       
       <ContextPanel 

@@ -81,10 +81,9 @@ const SuperAdminDashboard = () => {
   const { addToast } = useToast();
   
   const [platformEngine, setPlatformEngine] = useState({
-    llmBaseUrl: 'https://remote-lmstudio.ngrok.app/v1',
-    defaultModel: 'gemma-4-e4b-uncensored-hauhaucs-aggressive',
-    globalGuardrailPrompt: 'Always answer in Romanized Nepali unless the customer writes in English. Escalate angry customers or sensitive requests.',
-    webhookReceiverUrl: 'https://api.samuhik.local/webhooks/inbound',
+    globalSystemPrompt: 'Always answer in Romanized Nepali unless the customer writes in English. Provide clear, concise answers. Escalate angry customers, refund requests, or sensitive queries immediately to a human agent.',
+    webhookReceiverUrl: '/.netlify/functions/gemini',
+    defaultModel: 'gemini-2.5-flash',
     aiEnabledByDefault: true,
     allowTenantWebSearch: true,
     requireHumanForPayments: true,
@@ -210,9 +209,6 @@ const SuperAdminDashboard = () => {
       const newTenant = {
         id: 'tenant-' + Date.now(),
         name: newTenantName,
-        evolution_api_url: '',
-        evolution_api_key: '',
-        evolution_instance: '',
         store_context_prompt: '',
         web_search_enabled: false,
         enabled_platforms: newTenantPlatforms,
@@ -272,8 +268,6 @@ const SuperAdminDashboard = () => {
 
   return (
     <div className="p-8 max-w-7xl mx-auto relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
-
       <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-primary tracking-tight">Platform Overview</h2>
@@ -294,19 +288,17 @@ const SuperAdminDashboard = () => {
           <p className="text-4xl font-black text-primary">{tenants.length}</p>
         </div>
         <div className="glass-card p-6 rounded-2xl shadow-lg stat-card relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Active Instances</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Connected Channels</p>
           <p className="text-4xl font-black text-accent">
-            {tenants.filter(t => t.evolution_instance).length}
+            {tenants.reduce((acc, t) => acc + (tenantBrainSettings[t.id]?.enabledPlatforms?.length || 1), 0)}
           </p>
         </div>
         <div className="glass-card p-6 rounded-2xl shadow-lg stat-card relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Total Messages</p>
           <p className="text-4xl font-black text-blue-400">1.2k</p>
         </div>
         <div className="glass-card p-6 rounded-2xl shadow-lg stat-card">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">LLM Load</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">AI Engine</p>
           <p className="text-4xl font-black text-primary">Normal</p>
         </div>
       </div>
@@ -315,39 +307,30 @@ const SuperAdminDashboard = () => {
         <SectionCard icon={Server} title="Platform Engine Controls" eyebrow="Super Admin master settings" tone="indigo">
           <div className="grid gap-5 lg:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Remote LLM Base URL</span>
-              <input
-                value={platformEngine.llmBaseUrl}
-                onChange={(event) => setPlatformEngine((current) => ({ ...current, llmBaseUrl: event.target.value }))}
-                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
-                placeholder="https://your-lmstudio-ngrok-url/v1"
-              />
-            </label>
-            <label className="block">
               <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Default Model</span>
               <input
                 value={platformEngine.defaultModel}
                 onChange={(event) => setPlatformEngine((current) => ({ ...current, defaultModel: event.target.value }))}
                 className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
-                placeholder="gemma-4-e4b..."
+                placeholder="gemini-2.5-flash"
               />
             </label>
-            <label className="block lg:col-span-2">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global Guardrail Prompt</span>
-              <textarea
-                rows={3}
-                value={platformEngine.globalGuardrailPrompt}
-                onChange={(event) => setPlatformEngine((current) => ({ ...current, globalGuardrailPrompt: event.target.value }))}
-                className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 outline-none focus-ring text-primary transition-all"
-              />
-            </label>
-            <label className="block lg:col-span-2">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Inbound Webhook Receiver</span>
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">AI Function Route</span>
               <input
                 value={platformEngine.webhookReceiverUrl}
                 onChange={(event) => setPlatformEngine((current) => ({ ...current, webhookReceiverUrl: event.target.value }))}
                 className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
-                placeholder="https://your-api/webhooks/inbound"
+                placeholder="/.netlify/functions/gemini"
+              />
+            </label>
+            <label className="block lg:col-span-2">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global System Prompt</span>
+              <textarea
+                rows={3}
+                value={platformEngine.globalSystemPrompt}
+                onChange={(event) => setPlatformEngine((current) => ({ ...current, globalSystemPrompt: event.target.value }))}
+                className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 outline-none focus-ring text-primary transition-all"
               />
             </label>
             <div className="lg:col-span-2 grid gap-4 rounded-xl border border-subtle bg-surface/50 p-5 hover:bg-surface transition-colors">
