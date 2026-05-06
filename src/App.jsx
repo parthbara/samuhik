@@ -12,6 +12,7 @@ import AdminConfig from './pages/AdminConfig';
 import UserManagement from './pages/UserManagement';
 import VendorDashboard from './pages/vendor/VendorDashboard';
 import Orders from './pages/Orders';
+import CustomerSimulator from './pages/CustomerSimulator';
 
 const RootRedirect = () => {
   const { profile, loading } = useAuth();
@@ -19,6 +20,7 @@ const RootRedirect = () => {
   if (!profile) return <Navigate to="/login" replace />;
   
   if (profile.role === 'super_admin') return <Navigate to="/vendor" replace />;
+  if (profile.role === 'customer') return <Navigate to="/customer" replace />;
   if (profile.role === 'admin') return <Navigate to="/admin/config" replace />;
   return <Navigate to="/inbox" replace />;
 };
@@ -31,9 +33,14 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/customer" element={
+                <ProtectedRoute requiredRole="customer">
+                  <CustomerSimulator />
+                </ProtectedRoute>
+              } />
               
               <Route element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole={['super_admin', 'admin', 'agent']}>
                   <AppLayout />
                 </ProtectedRoute>
               }>
