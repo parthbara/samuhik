@@ -8,9 +8,6 @@
 export const DEMO_TENANT = {
   id: 'tenant-001',
   name: 'Parth Optical House',
-  evolution_api_url: 'https://evo.demo.samuhik.ai',
-  evolution_api_key: 'demo-evolution-key-abc123',
-  evolution_instance: 'parth-optical-wa',
   store_context_prompt: 'You are an assistant for an optical store in Kathmandu. Help customers with lenses, frames, repairs, appointments, and delivery.',
   web_search_enabled: false,
   enabled_platforms: ['whatsapp', 'instagram', 'messenger'],
@@ -21,9 +18,6 @@ export const DEMO_TENANT = {
 export const DEMO_TENANT_2 = {
   id: 'tenant-002',
   name: 'Kathmandu Fashion Hub',
-  evolution_api_url: '',
-  evolution_api_key: '',
-  evolution_instance: '',
   store_context_prompt: 'You are an assistant for a clothing store. Help customers with sizes, color availability, prices, delivery, and exchanges.',
   web_search_enabled: true,
   enabled_platforms: ['instagram', 'tiktok'],
@@ -67,6 +61,17 @@ export const DEMO_USERS = [
     tenants: { ...DEMO_TENANT },
     created_at: '2026-04-01T11:00:00Z',
   },
+  {
+    id: 'customer-001',
+    supabase_uid: 'uid-customer-001',
+    email: 'customer@demo.com',
+    password: 'demo1234',
+    name: 'Simulated Customer',
+    role: 'customer',
+    tenant_id: 'tenant-001',
+    tenants: { ...DEMO_TENANT },
+    created_at: '2026-05-01T09:00:00Z',
+  },
 ];
 
 export const ALL_TENANTS = [
@@ -87,28 +92,28 @@ export const ALL_USERS_WITH_TENANTS = DEMO_USERS.map((user) => ({
 // ── Demo Conversations ──────────────────────────────────────────────────
 
 export const DEMO_CONVERSATIONS = [
+
   {
     id: 'conv-001',
     tenant_id: 'tenant-001',
-    customerName: 'Rajesh Maharjan',
+    customerName: 'Simulated Customer',
+    customerUserId: 'customer-001',
     platform: 'whatsapp',
-    tags: ['New Order'],
+    tags: [],
     aiEnabled: true,
-    initials: 'RM',
-    role: 'Wholesale Buyer',
-    time: '10:22',
-    unread: 2,
+    initials: 'SC',
+    role: 'Retail Buyer',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    unread: 0,
     phone: '+977-9841234567',
-    address: 'Ason, Kathmandu',
+    address: 'Baluwatar, Kathmandu',
     lifetimeValue: 'Rs. 45,200',
-    messages: [
-      { from: 'customer', time: '10:15', text: 'Namaste dai, BlueCut 1.56 lens ko price kati ho?' },
-      { from: 'ai', time: '10:15', text: 'Namaste Rajesh ji! BlueCut 1.56 lens Rs. 450 per piece ho. Kati quantity chahiyo tapailai?' },
-      { from: 'customer', time: '10:18', text: '10 pair chahiyo. Wholesale rate milcha?' },
-      { from: 'ai', time: '10:18', text: 'Ji 10 pair lai wholesale rate Rs. 420 per piece huncha. Total Rs. 4,200. Order confirm garnu huncha?' },
-      { from: 'customer', time: '10:20', text: 'Thik cha, confirm gardinu. Payment paxi garchu.' },
-      { from: 'ai', time: '10:22', text: 'Order confirmed ✅ Order #ORD-1007 — 10× BlueCut 1.56 @ Rs. 420 = Rs. 4,200. Stock reserved. Payment aaepachi dispatch gardinchu.' },
-    ],
+    email: 'simulated.customer@gmail.com',
+    leadStage: 'New',
+    assignedTo: 'Sita Gurung',
+    urgency: 'low',
+    intent: 'general_inquiry',
+    messages: [],
   },
   {
     id: 'conv-002',
@@ -124,6 +129,11 @@ export const DEMO_CONVERSATIONS = [
     phone: '+977-9861234567',
     address: 'Patan, Lalitpur',
     lifetimeValue: 'Rs. 12,800',
+    email: 'sunita.thapa@gmail.com',
+    leadStage: 'Complaint',
+    assignedTo: 'Unassigned',
+    urgency: 'high',
+    intent: 'refund_request',
     messages: [
       { from: 'customer', time: '10:40', text: 'Hello, hijo leko frame tutyo 2 din mai. Very disappointed.' },
       { from: 'ai', time: '10:40', text: 'I apologize about the frame issue. Let me connect you with our team for immediate assistance.' },
@@ -146,6 +156,11 @@ export const DEMO_CONVERSATIONS = [
     phone: '+977-9801234567',
     address: 'Durbarmarg, Kathmandu',
     lifetimeValue: 'Rs. 1,24,500',
+    email: 'ankit.joshi@gmail.com',
+    leadStage: 'VIP',
+    assignedTo: 'Ram Shrestha',
+    urgency: 'medium',
+    intent: 'delivery_status',
     messages: [
       { from: 'customer', time: '12:30', text: 'Progressive 1.67 lens 6 pair chahiyo. Aaja bihana order deko thiye, kati pugiyo?' },
       { from: 'ai', time: '12:30', text: 'Namaste Doctor sahab! Tapai ko order #ORD-1010 — 6× Progressive 1.67 already completed cha. Invoice generated bhaisakyo.' },

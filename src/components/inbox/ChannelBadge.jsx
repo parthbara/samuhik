@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Camera, MessageSquareText } from 'lucide-react';
+import { MessageCircle, Camera, MessageSquareText, Music2 } from 'lucide-react';
 
 export const channels = {
   whatsapp: {
@@ -19,6 +19,12 @@ export const channels = {
     icon: MessageSquareText,
     badge: "bg-[#0084FF] text-white",
     tint: "bg-blue-50 text-blue-700 ring-blue-100",
+  },
+  tiktok: {
+    label: "TikTok",
+    icon: Music2,
+    badge: "bg-slate-900 text-white",
+    tint: "bg-slate-100 text-slate-800 ring-slate-200",
   },
 };
 

@@ -1,12 +1,8 @@
-// ═══════════════════════════════════════════════════════════════════════════
-//  Centralised config — single source of truth for DEMO_MODE and globals
-// ═══════════════════════════════════════════════════════════════════════════
+const demoModeValue = import.meta.env.VITE_DEMO_MODE;
 
-/** When true, all providers use in-memory mock data instead of Supabase. */
-export const DEMO_MODE = true;
+export const DEMO_MODE =
+  demoModeValue === undefined ? true : String(demoModeValue).toLowerCase() === 'true';
 
-/** App display name */
 export const APP_NAME = 'Samuhik';
 
-/** App tagline */
-export const APP_TAGLINE = 'AI-Powered Omnichannel Commerce';
+export const APP_TAGLINE = 'Omnichannel commerce inbox';

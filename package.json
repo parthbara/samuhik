@@ -5,22 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "server": "node server/index.mjs",
-    "server:dev": "node --watch server/index.mjs",
-    "llm:bridge": "node scripts/lmstudio-cors-bridge.mjs",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "db:schema": "echo 'Run server/db/schema.sql in Supabase SQL editor'",
-    "db:seed-tenant": "node server/db/seed_tenant.mjs"
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.2",
     "@supabase/supabase-js": "^2.105.1",
     "@vitejs/plugin-react": "^4.3.4",
-    "dotenv": "^16.4.7",
-    "fastify": "^5.3.2",
     "lucide-react": "^0.468.0",
-    "pino-pretty": "^13.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.14.2",

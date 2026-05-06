@@ -74,6 +74,7 @@ const AdminConfig = () => {
   const [channelState, setChannelState] = useState(makeInitialChannelState);
   const [posEndpoint, setPosEndpoint] = useState('');
   const [posSyncState, setPosSyncState] = useState('idle');
+  const [systemPrompt, setSystemPrompt] = useState('');
   const [routingRules, setRoutingRules] = useState({
     aiFirst: true,
     routeAngryCustomers: true,
@@ -120,8 +121,6 @@ const AdminConfig = () => {
 
   return (
     <div className="mx-auto max-w-7xl p-6 lg:p-8 relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
-
       <div className="relative z-10 mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-accent">Store Admin</p>
@@ -149,12 +148,10 @@ const AdminConfig = () => {
           <p className="text-4xl font-black text-primary">{connectedCount}</p>
         </div>
         <div className="glass-card rounded-2xl p-5 shadow-lg stat-card relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-accent rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">AI Routing</p>
           <p className="text-4xl font-black text-accent">{routingRules.aiFirst ? 'Active' : 'Paused'}</p>
         </div>
         <div className="glass-card rounded-2xl p-5 shadow-lg stat-card relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-warm rounded-full mix-blend-screen filter blur-[48px] opacity-10"></div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">POS Sync</p>
           <p className="text-4xl font-black text-warm">{posSyncState === 'synced' ? 'Ready' : 'Draft'}</p>
         </div>
@@ -259,6 +256,31 @@ const AdminConfig = () => {
               Inventory sync simulated. This is ready for PasalOS API wiring tomorrow.
             </div>
           )}
+        </SectionCard>
+
+        <SectionCard icon={Bot} title="AI System Prompt" eyebrow="Personality & rules" tone="emerald">
+          <div className="mb-4">
+            <label className="block">
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                Store-specific System Prompt
+              </span>
+              <textarea
+                rows={4}
+                value={systemPrompt}
+                onChange={(e) => setSystemPrompt(e.target.value)}
+                className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
+                placeholder="You are a helpful AI assistant for our store. Always reply in Romanized Nepali. Be polite and concise. Escalate when necessary."
+              />
+            </label>
+          </div>
+          <div className="flex justify-end">
+             <button
+              onClick={() => addToast('System prompt saved.', 'success')}
+              className="rounded-xl bg-surface border border-subtle px-6 py-2.5 text-sm font-bold text-primary hover:bg-hover transition-all"
+            >
+              Save Prompt
+            </button>
+          </div>
         </SectionCard>
 
         <SectionCard icon={Route} title="AI Routing & Ticket Rules" eyebrow="Handover policy" tone="blue">
