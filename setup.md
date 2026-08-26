@@ -4,11 +4,7 @@
 
 Paste these into Netlify site settings:
 
-```text
-VITE_SUPABASE_URL=your-existing-supabase-url
-VITE_SUPABASE_ANON_KEY=your-existing-supabase-anon-key
-VITE_DEMO_MODE=true
-GEMINI_API_KEY=your-gemini-api-key
+
 ```
 
 Keep `GEMINI_API_KEY` server-side only. Do not create a `VITE_GEMINI_API_KEY`.

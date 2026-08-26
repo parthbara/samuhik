@@ -20,10 +20,9 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) =
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-deep text-muted relative overflow-hidden">
-        <div className="absolute inset-0 mesh-gradient opacity-10"></div>
-        <Bot className="w-16 h-16 mb-6 opacity-20 filter drop-shadow-[0_0_15px_rgba(0,212,170,0.5)]" />
-        <p className="text-lg font-medium text-secondary relative z-10">Select a conversation to start</p>
+      <div className="flex-1 flex flex-col items-center justify-center bg-deep text-muted p-12 text-center">
+        <Bot className="w-12 h-12 mb-4 opacity-10" />
+        <p className="text-sm font-medium text-secondary">Select a conversation from the queue to start</p>
       </div>
     );
   }
@@ -39,16 +38,14 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) =
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-deep border-r border-subtle relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay pointer-events-none z-0"></div>
-      
       {/* Header */}
-      <header className="h-16 flex items-center justify-between px-6 border-b border-subtle shrink-0 bg-surface/80 backdrop-blur-xl sticky top-0 z-10">
+      <header className="h-16 flex items-center justify-between px-6 border-b border-subtle shrink-0 bg-surface sticky top-0 z-10">
         <div className="flex items-center gap-3 min-w-0">
           <Avatar conversation={conversation} size="sm" />
           <div className="min-w-0">
-            <h3 className="font-bold text-primary truncate leading-tight">{conversation.customerName}</h3>
-            <div className="flex items-center gap-1.5 text-xs text-muted font-medium">
-              <span className="flex h-1.5 w-1.5 rounded-full bg-accent animate-pulse"></span>
+            <h3 className="font-semibold text-sm text-primary truncate leading-tight">{conversation.customerName}</h3>
+            <div className="flex items-center gap-1.5 text-[10px] text-muted font-medium uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
               Online
             </div>
           </div>
@@ -57,56 +54,60 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) =
           <button
             type="button"
             onClick={onDemoInbound}
-            className="flex items-center gap-2 rounded-lg border border-subtle bg-elevated px-3 py-2 text-xs font-bold text-secondary transition-colors hover:bg-hover hover:text-primary"
+            className="flex items-center gap-2 rounded-md border border-subtle bg-elevated px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-secondary transition-colors hover:bg-hover hover:text-primary"
           >
-            <Radio className="h-4 w-4" />
+            <Radio className="h-3.5 w-3.5" />
             Simulate Inbound
           </button>
+          
           <button
             type="button"
             onClick={() => setAiAutoReplyEnabled((current) => !current)}
-            className="flex items-center gap-2 rounded-full border border-subtle bg-elevated px-3 py-1.5 text-xs font-bold text-secondary hover:text-primary transition-colors"
+            className="flex items-center gap-2.5 rounded-md border border-subtle bg-elevated px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-secondary hover:text-primary transition-colors"
           >
-            <span>AI Auto-Reply</span>
-            <div className={`w-8 h-4 rounded-full relative transition-colors ${aiAutoReplyEnabled ? 'bg-accent/20 border border-accent/30' : 'bg-surface border border-subtle'}`}>
-              <div className={`absolute top-[1px] left-[1px] w-[12px] h-[12px] rounded-full transition-transform ${aiAutoReplyEnabled ? 'translate-x-4 bg-accent' : 'bg-secondary'}`} />
+            <span>AI Reply</span>
+            <div className={`w-8 h-4 rounded-full relative transition-all duration-200 ${aiAutoReplyEnabled ? 'bg-emerald-500' : 'bg-zinc-600'}`}>
+              <div className={`absolute top-[2px] left-[2px] w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200 ${aiAutoReplyEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
             </div>
           </button>
-          <button className="p-2 hover:bg-hover rounded-lg text-secondary transition-colors">
-            <Phone className="w-5 h-5" />
+
+          <div className="h-4 w-[1px] bg-subtle mx-1" />
+
+          <button className="p-2 hover:bg-hover rounded-md text-secondary transition-colors">
+            <Phone className="w-4 h-4" />
           </button>
-          <button className="p-2 hover:bg-hover rounded-lg text-secondary transition-colors">
-            <MoreHorizontal className="w-5 h-5" />
+          <button className="p-2 hover:bg-hover rounded-md text-secondary transition-colors">
+            <MoreHorizontal className="w-4 h-4" />
           </button>
         </div>
       </header>
 
       {/* AI Status Banner */}
       {isAiActive && (
-        <div className="px-6 py-2.5 bg-accent/10 border-b border-accent/20 flex items-center justify-between backdrop-blur-md relative z-10">
-          <div className="flex items-center gap-2 text-xs font-bold text-accent">
-            <Bot className="w-4 h-4" />
-            AI Assistant is handling this conversation
+        <div className="px-6 py-2 bg-accent/5 border-b border-accent/10 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-accent uppercase tracking-tight">
+            <Bot className="w-3.5 h-3.5" />
+            AI Assistant is managing this chat
           </div>
           <button 
             onClick={onTakeOver}
-            className="text-[11px] font-bold uppercase tracking-wider text-accent hover:text-white transition-colors underline decoration-2 underline-offset-4"
+            className="text-[10px] font-bold uppercase tracking-widest text-accent hover:underline underline-offset-4"
           >
-            Take Over
+            Manual Take Over
           </button>
         </div>
       )}
 
       {!isAiActive && (
-        <div className="px-6 py-2.5 bg-warm/10 border-b border-warm/20 flex items-center gap-2 text-xs font-bold text-warm backdrop-blur-md relative z-10">
-          {aiAutoReplyEnabled ? <UserRoundCheck className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-          {aiAutoReplyEnabled ? 'Manual Mode: You are responding as a human agent' : 'AI Paused - Human Routing Active'}
+        <div className="px-6 py-2 bg-warm/5 border-b border-warm/10 flex items-center gap-2 text-[11px] font-semibold text-warm uppercase tracking-tight">
+          {aiAutoReplyEnabled ? <UserRoundCheck className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+          {aiAutoReplyEnabled ? 'Human Agent Mode Active' : 'AI Paused'}
         </div>
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 scroll-smooth relative z-10">
-        <div className="max-w-3xl mx-auto space-y-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 scroll-smooth bg-deep">
+        <div className="max-w-3xl mx-auto space-y-4">
           {conversation.messages.map((msg, i) => (
             <MessageBubble key={i} message={msg} perspective="admin" />
           ))}
@@ -114,11 +115,11 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) =
       </div>
 
       {/* Composer */}
-      <footer className="p-4 bg-surface/90 backdrop-blur-xl border-t border-subtle relative z-10">
+      <footer className="p-4 bg-surface border-t border-subtle">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-end gap-3 bg-elevated border border-subtle rounded-2xl p-2 transition-all focus-within:border-accent focus-within:shadow-[0_0_15px_rgba(0,212,170,0.1)]">
-            <button className="p-2 text-secondary hover:text-primary hover:bg-hover rounded-xl transition-all">
-              <Plus className="w-5 h-5" />
+          <div className="flex items-end gap-2 bg-elevated border border-subtle rounded-lg p-1.5 transition-all focus-within:border-accent">
+            <button className="p-2 text-muted hover:text-primary hover:bg-hover rounded-md transition-all">
+              <Plus className="w-4 h-4" />
             </button>
             <textarea
               rows={1}
@@ -130,17 +131,20 @@ const ChatWindow = ({ conversation, onHumanReply, onTakeOver, onDemoInbound }) =
                   handleSend();
                 }
               }}
-              placeholder={isAiActive ? "AI is active... take over to type" : "Type your message..."}
+              placeholder={isAiActive ? "AI is active... take over to type" : "Type a message..."}
               disabled={isAiActive}
-              className="flex-1 bg-transparent border-none focus:ring-0 text-sm py-2 px-1 resize-none min-h-[40px] max-h-32 text-primary placeholder:text-muted"
+              className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm py-2 px-1 resize-none min-h-[38px] max-h-32 text-primary placeholder:text-muted"
             />
             <button
               onClick={handleSend}
               disabled={!draft.trim() || isAiActive}
-              className="p-2.5 bg-accent text-deep rounded-xl hover:bg-accent-dim disabled:bg-surface disabled:text-muted disabled:border disabled:border-subtle transition-all"
+              className="p-2 bg-accent text-deep rounded-md hover:opacity-90 disabled:opacity-30 transition-all"
             >
               <Send className="w-4 h-4" />
             </button>
+          </div>
+          <div className="mt-2 flex justify-center">
+            <p className="text-[10px] text-muted uppercase tracking-widest font-medium">Shift + Enter for new line</p>
           </div>
         </div>
       </footer>
