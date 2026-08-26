@@ -7,6 +7,9 @@ import { useToast } from '../contexts/ToastContext';
 
 const UserManagement = () => {
   const { profile } = useAuth();
+  const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
+  const isPlatformOwner = profile?.role === 'platform_owner';
+
   const { addToast } = useToast();
   const [users, setUsers] = useState([]);
   const [tenants, setTenants] = useState([]);
@@ -19,7 +22,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-    if (profile.role === 'super_admin') {
+    if (isHigherAdmin) {
       fetchTenants();
     } else {
       setNewTenantId(profile.tenant_id);
@@ -31,7 +34,7 @@ const UserManagement = () => {
 
     if (DEMO_MODE) {
       await new Promise(r => setTimeout(r, 200));
-      if (profile.role === 'super_admin') {
+      if (isHigherAdmin) {
         setUsers([...ALL_USERS_WITH_TENANTS]);
       } else {
         setUsers(ALL_USERS_WITH_TENANTS.filter(u => u.tenant_id === profile.tenant_id));
@@ -43,7 +46,7 @@ const UserManagement = () => {
     const { supabase } = await import('../lib/supabase');
     let query = supabase.from('users').select('*, tenants(name)');
     
-    if (profile.role !== 'super_admin') {
+    if (!isHigherAdmin) {
       query = query.eq('tenant_id', profile.tenant_id);
     }
 
@@ -125,13 +128,13 @@ const UserManagement = () => {
 
   return (
     <div className="p-8 max-w-6xl mx-auto relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
 
       <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
           <h2 className="text-3xl font-extrabold text-primary tracking-tight">Team Management</h2>
           <p className="text-secondary text-sm mt-1 font-medium">
-            {profile.role === 'super_admin' ? 'Manage all users across the platform.' : 'Manage staff access and roles for your store.'}
+            {isHigherAdmin ? 'Manage all users across the platform.' : 'Manage staff access and roles for your store.'}
           </p>
         </div>
         <button
@@ -170,19 +173,23 @@ const UserManagement = () => {
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2 text-xs text-secondary font-medium">
                     <Building2 className="w-3.5 h-3.5" />
-                    {u.tenants?.name || 'Platform (Super Admin)'}
+                    {u.tenants?.name || tenants.find(t => t.id === u.tenant_id)?.name || 'Platform (Super Admin)'}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                    u.role === 'super_admin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : (u.role === 'admin' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-surface text-secondary border-subtle')
+                    u.role === 'platform_owner' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 
+                    (u.role === 'super_admin' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 
+                    (u.role === 'admin' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-surface text-secondary border-subtle'))
                   }`}>
-                    {u.role === 'super_admin' ? <Shield className="w-3 h-3" /> : (u.role === 'admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />)}
+                    {u.role === 'platform_owner' ? <Shield className="w-3 h-3 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]" /> : 
+                     (u.role === 'super_admin' ? <Shield className="w-3 h-3" /> : 
+                     (u.role === 'admin' ? <Shield className="w-3 h-3" /> : <User className="w-3 h-3" />))}
                     {u.role.replace('_', ' ')}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right text-muted">
-                  {u.supabase_uid !== profile.supabase_uid && (
+                  {u.role !== 'platform_owner' && u.supabase_uid !== profile.supabase_uid && (
                     <button 
                       onClick={() => handleRemove(u.id)}
                       className="hover:text-rose-400 hover:bg-rose-500/10 p-2 rounded-lg transition-colors"
@@ -210,7 +217,7 @@ const UserManagement = () => {
               </button>
             </div>
             <form onSubmit={handleAdd} className="p-6 space-y-5">
-              {profile.role === 'super_admin' && (
+              {isHigherAdmin && (
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Assign to Store</label>
                   <select
@@ -258,7 +265,7 @@ const UserManagement = () => {
                 >
                   <option value="agent">Staff / Agent</option>
                   <option value="admin">Store Admin</option>
-                  {profile.role === 'super_admin' && <option value="super_admin">Vendor / Super Admin</option>}
+                  {isHigherAdmin && <option value="super_admin">Platform / Super Admin</option>}
                 </select>
               </div>
               <div className="pt-4 flex gap-3">

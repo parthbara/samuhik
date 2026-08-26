@@ -1,9 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="108" fill="#0f766e"/>
-  <path fill="#ffffff" d="M132 152c0-39.8 32.2-72 72-72h104c39.8 0 72 32.2 72 72v95c0 39.8-32.2 72-72 72h-82l-72 58c-8.6 6.9-22 0.8-22-10.2V152Z"/>
-  <path fill="#facc15" d="M179 174c0-15.5 12.5-28 28-28h98c15.5 0 28 12.5 28 28v58c0 15.5-12.5 28-28 28h-98c-15.5 0-28-12.5-28-28v-58Z"/>
-  <circle cx="224" cy="203" r="13" fill="#0f172a"/>
-  <circle cx="288" cy="203" r="13" fill="#0f172a"/>
-  <path fill="none" stroke="#0f172a" stroke-linecap="round" stroke-width="18" d="M229 236c17 12 37 12 54 0"/>
-  <path fill="#ffffff" d="M177 405h158c11.6 0 21 9.4 21 21s-9.4 21-21 21H177c-11.6 0-21-9.4-21-21s9.4-21 21-21Z" opacity=".92"/>
+  <rect width="512" height="512" rx="96" fill="#030712"/>
+
+  <defs>
+    <!-- Top tail: fades from solid at base (y≈251) toward tip (y≈338) -->
+    <linearGradient id="tt" x1="123" y1="251" x2="51" y2="338" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#42d6a4" stop-opacity="1"  />
+      <stop offset="100%" stop-color="#42d6a4" stop-opacity="0.3"/>
+    </linearGradient>
+    <!-- Bottom tail: fades from solid at base (y≈261) toward tip (y≈174) -->
+    <linearGradient id="bt" x1="389" y1="261" x2="461" y2="174" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#42d6a4" stop-opacity="1"  />
+      <stop offset="100%" stop-color="#42d6a4" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Top chat bubble body — upper-right, rx≈67 -->
+  <rect x="82" y="26" width="389" height="225" rx="67" fill="#42d6a4"/>
+  <!-- Top tail — bottom-left exit, fades to tip -->
+  <path d="M 143 251 Q 82 251 51 338 Q 102 282 164 251 Z" fill="url(#tt)"/>
+
+  <!-- Bottom chat bubble body — lower-left, rx≈67 -->
+  <rect x="41" y="261" width="389" height="225" rx="67" fill="#42d6a4"/>
+  <!-- Bottom tail — top-right exit, fades to tip -->
+  <path d="M 369 261 Q 430 261 461 174 Q 410 230 348 261 Z" fill="url(#bt)"/>
 </svg>

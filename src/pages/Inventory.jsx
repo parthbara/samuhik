@@ -5,19 +5,13 @@ import { ALL_TENANTS } from '../lib/mockData';
 import { Package, Search, AlertTriangle, ArrowDownToLine } from 'lucide-react';
 
 const Inventory = () => {
-  const { inventory } = useData();
+  const { inventory, vendors, selectedVendorId, setSelectedVendorId } = useData();
   const { profile } = useAuth();
-  const [tenantFilter, setTenantFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  const tenants = profile?.role === 'super_admin' ? ALL_TENANTS : [];
+  const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
   
   const visibleInventory = inventory.filter((item) => {
-    // Tenant filter
-    if (tenantFilter !== 'all' && (item.tenant_id || item.tenantId) !== tenantFilter) {
-      return false;
-    }
-    
     // Search filter
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -31,7 +25,7 @@ const Inventory = () => {
 
   return (
     <div className="p-8 max-w-6xl mx-auto relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
       
       <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -39,15 +33,15 @@ const Inventory = () => {
           <p className="text-secondary text-sm mt-1 font-medium">Real-time stock levels and pricing from your POS.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {tenants.length > 0 && (
+          {isHigherAdmin && (
             <select
-              value={tenantFilter}
-              onChange={(event) => setTenantFilter(event.target.value)}
+              value={selectedVendorId || ''}
+              onChange={(event) => setSelectedVendorId(event.target.value || null)}
               className="bg-surface border border-subtle text-primary px-4 py-2 rounded-xl font-semibold text-sm outline-none focus-ring transition-all"
             >
-              <option value="all">All tenants</option>
-              {tenants.map((tenant) => (
-                <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
+              <option value="">All Vendors</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
               ))}
             </select>
           )}
