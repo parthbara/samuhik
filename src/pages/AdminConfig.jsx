@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import { useToast } from '../contexts/ToastContext';
 import {
   AlertCircle,
@@ -8,6 +9,7 @@ import {
   Camera,
   CheckCircle2,
   Clock3,
+  Copy,
   MessageCircle,
   MessageSquareText,
   Music2,
@@ -18,6 +20,31 @@ import {
 } from 'lucide-react';
 import SectionCard from '../components/settings/SectionCard';
 import ToggleSwitch from '../components/settings/ToggleSwitch';
+
+const VariableInsert = ({ onInsert }) => {
+  const vars = [
+    { label: 'Shop Name', value: '{{shopName}}' },
+    { label: 'Owner', value: '{{shopOwner}}' },
+    { label: 'Contact', value: '{{contactNumber}}' },
+    { label: 'Inventory', value: '{{inventory}}' },
+    { label: 'Recent Orders', value: '{{orders}}' },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {vars.map(v => (
+        <button
+          key={v.value}
+          type="button"
+          onClick={() => onInsert(v.value)}
+          className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-surface border border-subtle hover:border-accent hover:text-accent transition-all"
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const CHANNELS = [
   {
@@ -70,11 +97,17 @@ const makeInitialChannelState = () =>
 
 const AdminConfig = () => {
   const { profile } = useAuth();
+  const { inventory } = useData();
   const { addToast } = useToast();
   const [channelState, setChannelState] = useState(makeInitialChannelState);
   const [posEndpoint, setPosEndpoint] = useState('');
   const [posSyncState, setPosSyncState] = useState('idle');
-  const [systemPrompt, setSystemPrompt] = useState('');
+
+  // The URL that the store's POS system should POST inventory updates to
+  const inboundWebhookUrl = `${window.location.origin}/.netlify/functions/pos-sync`;
+  const [systemPrompt, setSystemPrompt] = useState(localStorage.getItem(`samuhik_system_prompt_${profile?.tenant_id}`) || '');
+  const [shopOwner, setShopOwner] = useState(localStorage.getItem(`samuhik_shop_owner_${profile?.tenant_id}`) || '');
+  const [contactNumber, setContactNumber] = useState(localStorage.getItem(`samuhik_contact_number_${profile?.tenant_id}`) || '');
   const [routingRules, setRoutingRules] = useState({
     aiFirst: true,
     routeAngryCustomers: true,
@@ -86,6 +119,13 @@ const AdminConfig = () => {
     () => Object.values(channelState).filter((channel) => channel.connected).length,
     [channelState]
   );
+
+  const saveSystemPrompt = () => {
+    localStorage.setItem(`samuhik_system_prompt_${profile?.tenant_id}`, systemPrompt);
+    localStorage.setItem(`samuhik_shop_owner_${profile?.tenant_id}`, shopOwner);
+    localStorage.setItem(`samuhik_contact_number_${profile?.tenant_id}`, contactNumber);
+    addToast('System prompt and store info saved.', 'success');
+  };
 
   const updateChannel = (channelId, updates) => {
     setChannelState((current) => ({
@@ -107,12 +147,39 @@ const AdminConfig = () => {
     addToast(`${CHANNELS.find(c => c.id === channelId).label} webhook connected successfully.`, 'success');
   };
 
-  const syncInventory = () => {
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text).then(() => {
+      addToast(`${label} copied to clipboard.`, 'success');
+    });
+  };
+
+  const testPosSync = async () => {
     setPosSyncState('syncing');
-    setTimeout(() => {
-      setPosSyncState('synced');
-      addToast('Inventory synced successfully from POS.', 'success');
-    }, 900);
+    try {
+      // Send a test payload using current inventory — verifies the function is live
+      const testItems = inventory.slice(0, 3).map(item => ({
+        sku: item.sku || item.id,
+        name: item.item,
+        price: item.price,
+        stock: item.stock,
+      }));
+      const res = await fetch('/.netlify/functions/pos-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant_id: profile?.tenant_id, items: testItems }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPosSyncState('synced');
+        addToast(data.simulated ? 'Endpoint reachable (simulated — set Supabase env vars to persist).' : `Synced ${data.synced} item(s) successfully.`, 'success');
+      } else {
+        setPosSyncState('error');
+        addToast(`Sync error: ${data.error || res.status}`, 'error');
+      }
+    } catch {
+      setPosSyncState('error');
+      addToast('Could not reach the sync function. Check Netlify function logs.', 'error');
+    }
   };
 
   const saveRoutingRules = () => {
@@ -218,67 +285,179 @@ const AdminConfig = () => {
           </div>
         </SectionCard>
 
-        <SectionCard icon={RefreshCw} title="External POS Integration" eyebrow="Store-owned stock sync" tone="amber">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
-                PasalOS / Custom POS Webhook Endpoint
-              </label>
-              <input
-                type="url"
-                value={posEndpoint}
-                onChange={(event) => {
-                  setPosEndpoint(event.target.value);
-                  setPosSyncState('idle');
-                }}
-                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
-                placeholder="https://pasalos.example.com/webhooks/inventory"
-              />
+        <SectionCard icon={RefreshCw} title="POS Integration" eyebrow="Stock sync" tone="amber">
+          {/* ── Inbound: POS pushes to Samuhik ── */}
+          <div className="mb-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">
+              Inbound — Give these to your POS provider
+            </p>
+            <div className="space-y-3">
+              <div>
+                <span className="mb-1.5 block text-[10px] font-semibold text-secondary uppercase tracking-widest">
+                  Webhook URL (POS posts inventory changes here)
+                </span>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-xl border border-subtle bg-surface px-4 py-2.5 font-mono text-xs text-primary truncate">
+                    {inboundWebhookUrl}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(inboundWebhookUrl, 'Webhook URL')}
+                    className="shrink-0 rounded-xl border border-subtle bg-surface p-2.5 hover:bg-hover transition-all"
+                    title="Copy URL"
+                  >
+                    <Copy className="h-4 w-4 text-secondary" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <span className="mb-1.5 block text-[10px] font-semibold text-secondary uppercase tracking-widest">
+                  Tenant ID (include in request body as tenant_id)
+                </span>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-xl border border-subtle bg-surface px-4 py-2.5 font-mono text-xs text-primary truncate">
+                    {profile?.tenant_id || 'not assigned'}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(profile?.tenant_id || '', 'Tenant ID')}
+                    className="shrink-0 rounded-xl border border-subtle bg-surface p-2.5 hover:bg-hover transition-all"
+                    title="Copy Tenant ID"
+                  >
+                    <Copy className="h-4 w-4 text-secondary" />
+                  </button>
+                </div>
+              </div>
+              <div className="rounded-xl border border-subtle bg-surface/50 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Expected Payload</p>
+                <pre className="text-[11px] font-mono text-secondary leading-5 overflow-x-auto">{`POST ${inboundWebhookUrl}
+Header: x-api-key: <your SAMUHIK_POS_API_KEY>
+Body: {
+  "tenant_id": "${profile?.tenant_id || 'your-tenant-id'}",
+  "items": [
+    { "sku": "RB-3025", "name": "Ray-Ban Aviator", "price": 15000, "stock": 12 },
+    { "sku": "OO-9102", "name": "Oakley Holbrook", "price": 18500, "stock": 8 }
+  ]
+}`}</pre>
+                <p className="mt-2 text-[10px] text-muted">
+                  PasalOS fields also accepted: <code className="text-accent">product_code</code>, <code className="text-accent">selling_price</code>, <code className="text-accent">quantity_on_hand</code>
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={syncInventory}
-              disabled={!posEndpoint.trim() || posSyncState === 'syncing'}
-              className="h-12 rounded-xl bg-warm px-6 text-sm font-bold text-deep hover:brightness-110 disabled:bg-surface disabled:text-muted disabled:border disabled:border-subtle transition-all"
-            >
-              {posSyncState === 'syncing' ? 'Syncing...' : 'Sync Inventory'}
-            </button>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={testPosSync}
+                disabled={posSyncState === 'syncing' || !profile?.tenant_id}
+                className="rounded-xl bg-warm px-5 py-2.5 text-sm font-bold text-deep hover:brightness-110 disabled:bg-surface disabled:text-muted disabled:border disabled:border-subtle transition-all"
+              >
+                {posSyncState === 'syncing' ? 'Testing...' : 'Test Connection'}
+              </button>
+              {posSyncState === 'synced' && (
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-accent">
+                  <CheckCircle2 className="h-4 w-4" /> Function reachable
+                </span>
+              )}
+              {posSyncState === 'error' && (
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-red-400">
+                  <AlertCircle className="h-4 w-4" /> Connection failed — check Netlify logs
+                </span>
+              )}
+            </div>
           </div>
-          <div className="mt-4 rounded-xl border border-warm/20 bg-warm/5 p-4 flex gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warm" />
+
+          {/* ── Outbound: Samuhik pulls from POS ── */}
+          <div className="border-t border-subtle pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted">
+                Outbound — Pull from POS on demand
+              </p>
+              <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-warm/10 text-warm border border-warm/20">
+                Coming soon
+              </span>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end opacity-50 pointer-events-none">
+              <div>
+                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                  PasalOS / Custom POS API Endpoint
+                </label>
+                <input
+                  type="url"
+                  value={posEndpoint}
+                  onChange={(event) => setPosEndpoint(event.target.value)}
+                  className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm text-primary outline-none"
+                  placeholder="https://pasalos.example.com/api/inventory"
+                  disabled
+                />
+              </div>
+              <button
+                type="button"
+                disabled
+                className="h-12 rounded-xl bg-surface border border-subtle px-6 text-sm font-bold text-muted"
+              >
+                Pull Inventory
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-warm/20 bg-warm/5 p-4 flex gap-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warm" />
             <p className="text-sm leading-6 text-secondary">
-              Store Admins can manage their daily POS sync here. Super Admins can also audit and override tenant-level POS policy from the platform console.
+              Set <code className="text-accent font-mono text-xs">SAMUHIK_POS_API_KEY</code> and <code className="text-accent font-mono text-xs">SUPABASE_SERVICE_ROLE_KEY</code> in your Netlify environment variables to enable persistent inventory sync. Contact Samuhik support for your API key.
             </p>
           </div>
-          {posSyncState === 'synced' && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm font-semibold text-primary">
-              <CheckCircle2 className="h-4 w-4 text-accent" />
-              Inventory sync simulated. This is ready for PasalOS API wiring tomorrow.
-            </div>
-          )}
         </SectionCard>
 
         <SectionCard icon={Bot} title="AI System Prompt" eyebrow="Personality & rules" tone="emerald">
-          <div className="mb-4">
+          <div className="grid gap-4 mb-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                  Shop Owner Name
+                </span>
+                <input
+                  type="text"
+                  value={shopOwner}
+                  onChange={(e) => setShopOwner(e.target.value)}
+                  className="w-full rounded-xl border border-subtle bg-surface px-4 py-2.5 text-sm text-primary outline-none transition-all focus-ring"
+                  placeholder="e.g. Ram Shrestha"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                  Support Contact Number
+                </span>
+                <input
+                  type="text"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  className="w-full rounded-xl border border-subtle bg-surface px-4 py-2.5 text-sm text-primary outline-none transition-all focus-ring"
+                  placeholder="e.g. +977-98XXXXXXXX"
+                />
+              </label>
+            </div>
             <label className="block">
               <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
-                Store-specific System Prompt
+                Custom Instructions (Tone & Behavior)
               </span>
+              <VariableInsert onInsert={(v) => {
+                setSystemPrompt(prev => (prev || '') + (prev ? ' ' : '') + v);
+              }} />
               <textarea
                 rows={4}
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 className="w-full resize-none rounded-xl border border-subtle bg-surface px-4 py-3 text-sm leading-6 text-primary outline-none transition-all focus-ring placeholder:text-muted/50"
-                placeholder="You are a helpful AI assistant for our store. Always reply in Romanized Nepali. Be polite and concise. Escalate when necessary."
+                placeholder="You are a helpful AI assistant for KTM Optical House. Always reply in Romanized Nepali. Be polite and concise."
               />
             </label>
           </div>
           <div className="flex justify-end">
              <button
-              onClick={() => addToast('System prompt saved.', 'success')}
-              className="rounded-xl bg-surface border border-subtle px-6 py-2.5 text-sm font-bold text-primary hover:bg-hover transition-all"
+              onClick={saveSystemPrompt}
+              className="rounded-xl bg-accent px-6 py-2.5 text-sm font-bold text-deep hover:bg-accent-dim transition-all shadow-lg"
             >
-              Save Prompt
+              Save Configuration
             </button>
           </div>
         </SectionCard>

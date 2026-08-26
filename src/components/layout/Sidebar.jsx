@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import Logo from '../Logo';
 import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
 import {
   BarChart3,
   Bot,
@@ -13,21 +15,26 @@ import {
   Shield,
   Sun,
   Users,
-  Wand2,
+  Store,
+  ChevronDown
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/vendor', icon: LayoutDashboard, label: 'Platform', superOnly: true },
-  { to: '/inbox', icon: Inbox, label: 'Inbox' },
+  { to: '/platform', icon: LayoutDashboard, label: 'Command Center', superOnly: true },
+  { to: '/inbox', icon: Inbox, label: 'Global Inbox' },
+  { to: '/simulate', icon: Bot, label: 'Simulate', tenantOnly: true },
   { to: '/inventory', icon: Shield, label: 'Inventory', adminOnly: true },
   { to: '/admin/orders', icon: FileSpreadsheet, label: 'Orders', adminOnly: true },
-  { to: '/admin/config', icon: Settings, label: 'Settings', adminOnly: true },
+  { to: '/admin/config', icon: Settings, label: 'Config', adminOnly: true },
   { to: '/admin/users', icon: Users, label: 'Team', adminOnly: true },
 ];
 
 const Sidebar = ({ onNavigate }) => {
   const { profile, logout } = useAuth();
+  const { vendors, selectedVendorId, setSelectedVendorId } = useData();
   const [isLight, setIsLight] = useState(() => localStorage.getItem('theme') === 'light');
+  
+  const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
 
   useEffect(() => {
     document.documentElement.classList.toggle('light', isLight);
@@ -37,23 +44,21 @@ const Sidebar = ({ onNavigate }) => {
   if (!profile) return null;
 
   return (
-    <aside className="flex h-full w-[184px] flex-col border-r border-subtle bg-surface text-secondary">
-      <div className="border-b border-subtle px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-white">
-            <Bot className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold text-primary">Samuhik</p>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Ops Console</p>
-          </div>
-        </div>
+    <aside className="flex h-full w-[220px] flex-col sidebar-root">
+      {/* Logo */}
+      <div className="flex h-16 items-center px-6">
+        <Logo className="scale-75 origin-left" />
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 px-3 py-8">
         {navItems.map((item) => {
-          if (item.superOnly && profile.role !== 'super_admin') return null;
-          if (item.adminOnly && profile.role !== 'admin' && profile.role !== 'super_admin') return null;
+          const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile.role);
+          const isAnyAdmin = isHigherAdmin || profile.role === 'admin';
+
+          if (item.superOnly && !isHigherAdmin) return null;
+          if (item.adminOnly && !isAnyAdmin) return null;
+          if (item.tenantOnly && !profile?.tenant_id) return null;
 
           return (
             <NavLink
@@ -61,57 +66,55 @@ const Sidebar = ({ onNavigate }) => {
               to={item.to}
               onClick={onNavigate}
               className={({ isActive }) =>
-                `flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                `group flex items-center gap-3 rounded px-3 py-2 text-[11px] font-bold uppercase tracking-widest transition-colors ${
                   isActive
-                    ? 'border-blue-700 bg-blue-700 text-white'
-                    : 'border-transparent text-secondary hover:border-medium hover:bg-hover hover:text-primary'
+                    ? 'sidebar-nav-active'
+                    : 'sidebar-nav-item'
                 }`
               }
             >
-              <item.icon className="h-4 w-4" />
+              <item.icon className="h-3.5 w-3.5 shrink-0" />
               {item.label}
             </NavLink>
           );
         })}
       </nav>
 
-      <div className="border-t border-subtle px-3 py-3">
-        <div className="mb-3 rounded-lg border border-subtle bg-elevated p-3">
-          <div className="mb-2 flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-100 text-xs font-bold text-blue-800">
+      {/* User Section */}
+      <div className="p-4 sidebar-footer">
+        <div className="mb-6 rounded p-3 sidebar-user-card">
+          <div className="flex items-center gap-3">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded sidebar-avatar text-[10px] font-bold">
               {profile.name?.charAt(0) || profile.email.charAt(0)}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-bold text-primary">{profile.name || 'User'}</p>
-              <p className="truncate text-[10px] font-semibold uppercase text-muted">{profile.role.replace('_', ' ')}</p>
+              <p className="truncate text-[11px] font-bold sidebar-user-name uppercase tracking-tight">{profile.name || 'User'}</p>
+              <p className="truncate text-[9px] sidebar-user-role uppercase tracking-widest">{profile.role.replace('_', ' ')}</p>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[10px] font-semibold text-muted">
-            <span className="flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Live</span>
-            <span className="flex items-center gap-1"><Wand2 className="h-3 w-3" /> Demo</span>
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsLight(!isLight)}
-          className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold text-secondary hover:bg-hover hover:text-primary"
-        >
-          <span className="flex items-center gap-2">
-            {isLight ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            Theme
-          </span>
-          <span className="text-[10px] uppercase">{isLight ? 'Light' : 'Dark'}</span>
-        </button>
+        <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => setIsLight(!isLight)}
+            className="flex w-full items-center justify-between rounded px-3 py-2 text-[9px] font-bold uppercase tracking-widest sidebar-action transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              {isLight ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              Theme
+            </span>
+          </button>
 
-        <button
-          type="button"
-          onClick={logout}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted hover:bg-hover hover:text-primary"
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </button>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center gap-2 rounded px-3 py-2 text-[9px] font-bold uppercase tracking-widest sidebar-logout transition-colors"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Logout
+          </button>
+        </div>
       </div>
     </aside>
   );

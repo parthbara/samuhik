@@ -26,11 +26,27 @@ const DemoAuthProvider = ({ children }) => {
     // Simulate network latency
     await new Promise(r => setTimeout(r, 600));
 
+    const lowerEmail = email.toLowerCase();
+    
+    // STRICT CHECK: The Boss
+    if (lowerEmail === 'parth@samuhik.com' && password === 'KAIZEN@0110') {
+       const bossProfile = {
+         id: 'user-boss',
+         email: lowerEmail,
+         name: 'Parth (Platform Owner)',
+         role: 'platform_owner',
+         tenant_id: null
+       };
+       setProfile(bossProfile);
+       localStorage.setItem('samuhik_demo_user', JSON.stringify(bossProfile));
+       return true;
+    }
+
     const found = DEMO_USERS.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+      u => u.email.toLowerCase() === lowerEmail && u.password === password
     );
     if (!found) {
-      throw new Error('Invalid email or password. Try: admin@demo.com / demo1234');
+      throw new Error('Invalid email or password.');
     }
 
     // Strip password before storing in state
@@ -40,13 +56,30 @@ const DemoAuthProvider = ({ children }) => {
     return true;
   };
 
+  const signup = async (email, password, name) => {
+    // Simulate network latency
+    await new Promise(r => setTimeout(r, 800));
+    
+    const newUser = {
+      id: `demo-${Date.now()}`,
+      email: email.toLowerCase(),
+      name,
+      role: 'admin',
+      tenant_id: `tenant-${Date.now()}`
+    };
+    
+    setProfile(newUser);
+    localStorage.setItem('samuhik_demo_user', JSON.stringify(newUser));
+    return true;
+  };
+
   const logout = async () => {
     setProfile(null);
     localStorage.removeItem('samuhik_demo_user');
   };
 
   return (
-    <AuthContext.Provider value={{ user: profile, profile, loading, login, logout }}>
+    <AuthContext.Provider value={{ user: profile, profile, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -106,10 +139,12 @@ const SupabaseAuthProvider = ({ children }) => {
         .single();
 
       if (error) {
-        // If profile doesn't exist, we might be a new user or error
         console.error('Error fetching profile:', error.message);
         setProfile(null);
       } else {
+        if (data && data.email && data.email.toLowerCase() === 'parth@samuhik.com') {
+          data.role = 'platform_owner';
+        }
         setProfile(data);
       }
     } catch (err) {
@@ -126,6 +161,19 @@ const SupabaseAuthProvider = ({ children }) => {
     return true;
   };
 
+  const signup = async (email, password, name) => {
+    if (!supabaseModule) throw new Error('Supabase not loaded yet');
+    const { data, error } = await supabaseModule.supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name }
+      }
+    });
+    if (error) throw error;
+    return data;
+  };
+
   const logout = async () => {
     if (supabaseModule) {
       await supabaseModule.supabase.auth.signOut();
@@ -133,7 +181,7 @@ const SupabaseAuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

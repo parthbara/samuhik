@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Shield } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ALL_TENANTS } from '../lib/mockData';
@@ -7,14 +8,19 @@ import ChatWindow from '../components/inbox/ChatWindow';
 import ContextPanel from '../components/inbox/ContextPanel';
 
 const Inbox = () => {
-  const { conversations, addMessage, updateConversation } = useData();
+  const { conversations, addMessage, updateConversation, vendors, selectedVendorId, setSelectedVendorId } = useData();
   const { profile } = useAuth();
   const [activeChatId, setActiveChatId] = useState(null);
   const [platformFilter, setPlatformFilter] = useState("all");
-  const [tenantFilter, setTenantFilter] = useState("all");
-  const tenants = profile?.role === 'super_admin' ? ALL_TENANTS : [];
+  const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
 
-  const activeConversation = conversations.find(c => c.id === activeChatId);
+  const activeConversation = (conversations || []).find(c => c.id === activeChatId);
+
+  // Filter conversations locally if needed (though DataContext already handles it)
+  const filteredConversations = (conversations || []).filter(c => {
+    if (platformFilter !== "all" && c.platform !== platformFilter) return false;
+    return true;
+  });
 
   const handleHumanReply = (text) => {
     if (!activeChatId) return;
@@ -54,10 +60,10 @@ const Inbox = () => {
   };
 
   const handleTakeOver = () => {
-    if (!activeChatId) return;
+    if (!activeChatId || !activeConversation) return;
     
     // Remove "Needs Human" tag and disable AI if take over is clicked
-    const newTags = activeConversation.tags.filter(t => t !== "Needs Human");
+    const newTags = (activeConversation.tags || []).filter(t => t !== "Needs Human");
     updateConversation(activeChatId, { 
       aiEnabled: false, 
       tags: newTags 
@@ -71,28 +77,55 @@ const Inbox = () => {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden bg-deep relative">
-      <ChatQueue 
-        conversations={conversations}
-        activeChatId={activeChatId}
-        onSelect={selectConversation}
-        platformFilter={platformFilter}
-        onPlatformFilterChange={setPlatformFilter}
-        tenants={tenants}
-        tenantFilter={tenantFilter}
-        onTenantFilterChange={setTenantFilter}
-      />
-      
-      <ChatWindow 
-        conversation={activeConversation}
-        onHumanReply={handleHumanReply}
-        onTakeOver={handleTakeOver}
-        onDemoInbound={handleDemoInbound}
-      />
-      
-      <ContextPanel 
-        conversation={activeConversation}
-      />
+    <div className="flex flex-col h-full bg-deep overflow-hidden">
+      {/* Inbox Switcher Bar */}
+      {isHigherAdmin && (
+        <div className="shrink-0 flex items-center justify-between px-6 py-3 bg-surface/30 border-b border-subtle">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                <Shield className="w-3.5 h-3.5 text-accent" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Platform Context:</span>
+             </div>
+             <select
+               value={selectedVendorId || ''}
+               onChange={(e) => setSelectedVendorId(e.target.value || null)}
+               className="bg-surface border border-subtle rounded-lg px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary outline-none focus:border-accent transition-all cursor-pointer"
+             >
+               <option value="">All Vendors (Global)</option>
+               {(vendors || []).map(v => (
+                 <option key={v.id} value={v.id}>{v.name}</option>
+               ))}
+             </select>
+          </div>
+          <div className="hidden md:block text-[9px] font-bold text-muted uppercase tracking-[0.2em]">
+            Managing {(vendors || []).length} Business Nodes
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+        <ChatQueue 
+          conversations={filteredConversations}
+          activeChatId={activeChatId}
+          onSelect={selectConversation}
+          platformFilter={platformFilter}
+          onPlatformFilterChange={setPlatformFilter}
+          tenants={[]} 
+          tenantFilter="all"
+          onTenantFilterChange={() => {}}
+        />
+        
+        <ChatWindow 
+          conversation={activeConversation}
+          onHumanReply={handleHumanReply}
+          onTakeOver={handleTakeOver}
+          onDemoInbound={handleDemoInbound}
+        />
+        
+        <ContextPanel 
+          conversation={activeConversation}
+        />
+      </div>
     </div>
   );
 };

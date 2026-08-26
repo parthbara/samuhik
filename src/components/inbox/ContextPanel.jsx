@@ -214,7 +214,7 @@ const ContextPanel = ({ conversation }) => {
   if (!conversation) {
     return (
       <aside className="hidden w-80 flex-col border-l border-subtle bg-elevated xl:flex relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none"></div>
+        <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none"></div>
         <div className="flex flex-1 items-center justify-center p-6 text-center relative z-10">
           <div>
             <BarChart3 className="mx-auto mb-3 h-10 w-10 text-muted opacity-50" />
@@ -248,7 +248,7 @@ const ContextPanel = ({ conversation }) => {
 
   return (
     <aside className="hidden w-[340px] flex-col overflow-y-auto border-l border-subtle bg-elevated xl:flex relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
       
       <div className="relative z-10 flex flex-col h-full">
         {/* ── Customer Avatar & Name ──────────────────────────────────────── */}

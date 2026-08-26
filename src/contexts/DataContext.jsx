@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { DEMO_MODE } from '../lib/config';
+import { ALL_TENANTS } from '../lib/mockData';
 import {
   DEMO_CONVERSATIONS_KEY,
   DEMO_INVENTORY_KEY,
@@ -16,41 +17,59 @@ import {
 
 const DataContext = createContext();
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  DEMO DATA PROVIDER — uses in-memory mock data
-// ═══════════════════════════════════════════════════════════════════════════
 const DemoDataProvider = ({ children }) => {
   const { profile } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedVendorId, setSelectedVendorId] = useState(null);
+  const [vendors, setVendors] = useState([]);
 
   const filterForProfile = (items) => {
-    if (profile?.role === 'super_admin') return items;
+    if (!profile) {
+      // Guest mode: show first tenant's data as demo
+      const demoTenantId = 'tenant-001';
+      return items.filter(c => c.tenant_id === demoTenantId);
+    }
+
+    const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
+    
+    if (isHigherAdmin) {
+      if (selectedVendorId) return items.filter(i => i.tenant_id === selectedVendorId);
+      return items;
+    }
+    
     if (profile?.role === 'customer') return items.filter(c => c.customerUserId === profile.id);
     if (profile?.tenant_id) return items.filter(c => c.tenant_id === profile.tenant_id);
     return [];
   };
 
   useEffect(() => {
-    if (!profile) {
-      setConversations([]);
-      setInventory([]);
-      setOrders([]);
-      setLoading(false);
-      return;
-    }
-
-    // Simulate network latency then load rich demo data
-    const timer = setTimeout(() => {
+    const fetchData = () => {
       const storedConversations = loadDemoConversations();
       const storedInventory = loadDemoInventory();
       const storedOrders = loadDemoOrders();
-      if (profile.role === 'super_admin') {
-        setConversations(storedConversations);
-        setInventory(storedInventory);
-        setOrders(storedOrders);
+      
+      const storedVendors = JSON.parse(localStorage.getItem('samuhik_demo_vendors') || '[]');
+      setVendors([...ALL_TENANTS, ...storedVendors]);
+      
+      const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
+
+      if (!profile) {
+        // Guest mode: show first tenant's data as demo
+        const demoTenantId = 'tenant-001';
+        setConversations(storedConversations.filter(c => c.tenant_id === demoTenantId));
+        setInventory(storedInventory.filter(i => i.tenant_id === demoTenantId));
+        setOrders(storedOrders.filter(o => o.tenant_id === demoTenantId));
+        setLoading(false);
+        return;
+      }
+
+      if (isHigherAdmin) {
+        setConversations(selectedVendorId ? storedConversations.filter(c => c.tenant_id === selectedVendorId) : storedConversations);
+        setInventory(selectedVendorId ? storedInventory.filter(i => i.tenant_id === selectedVendorId) : storedInventory);
+        setOrders(selectedVendorId ? storedOrders.filter(o => o.tenant_id === selectedVendorId) : storedOrders);
       } else if (profile.role === 'customer') {
         setConversations(storedConversations.filter(c => c.customerUserId === profile.id));
         setInventory(storedInventory.filter(i => i.tenant_id === profile.tenant_id));
@@ -65,25 +84,36 @@ const DemoDataProvider = ({ children }) => {
         setOrders([]);
       }
       setLoading(false);
-    }, 400);
+    };
 
-    return () => clearTimeout(timer);
-  }, [profile]);
+    fetchData();
+  }, [profile, selectedVendorId]);
 
   useEffect(() => {
-    if (!profile) return;
     const sync = () => {
       const storedInventory = loadDemoInventory();
       const storedOrders = loadDemoOrders();
-      setConversations(filterForProfile(loadDemoConversations()));
+      const storedConversations = loadDemoConversations();
+
+      const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
+
+      if (!profile) {
+        const demoTenantId = 'tenant-001';
+        setConversations(storedConversations.filter(c => c.tenant_id === demoTenantId));
+        setInventory(storedInventory.filter(i => i.tenant_id === demoTenantId));
+        setOrders(storedOrders.filter(o => o.tenant_id === demoTenantId));
+        return;
+      }
+
+      setConversations(filterForProfile(storedConversations));
       setInventory(
-        profile.role === 'super_admin'
-          ? storedInventory
+        isHigherAdmin
+          ? (selectedVendorId ? storedInventory.filter(i => i.tenant_id === selectedVendorId) : storedInventory)
           : storedInventory.filter(i => i.tenant_id === profile.tenant_id)
       );
       setOrders(
-        profile.role === 'super_admin'
-          ? storedOrders
+        isHigherAdmin
+          ? (selectedVendorId ? storedOrders.filter(o => o.tenant_id === selectedVendorId) : storedOrders)
           : storedOrders.filter(o => o.tenant_id === profile.tenant_id)
       );
     };
@@ -93,26 +123,30 @@ const DemoDataProvider = ({ children }) => {
 
     window.addEventListener(DEMO_SYNC_EVENT, sync);
     window.addEventListener('storage', onStorage);
+    window.addEventListener('samuhik_sync_vendors', sync);
 
     return () => {
       window.removeEventListener(DEMO_SYNC_EVENT, sync);
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener('samuhik_sync_vendors', sync);
     };
-  }, [profile]);
+  }, [profile, selectedVendorId]);
 
-  const addMessage = async (chatId, message) => {
-    setConversations(filterForProfile(appendDemoMessage(chatId, message)));
+  const addMessage = async (chatId, message, extraUpdates = {}) => {
+    const updated = appendDemoMessage(chatId, message, extraUpdates);
+    setConversations(filterForProfile(updated));
   };
 
   const updateConversation = async (chatId, updates) => {
-    setConversations(filterForProfile(updateDemoConversation(chatId, updates)));
+    const updated = updateDemoConversation(chatId, updates);
+    setConversations(filterForProfile(updated));
   };
 
   const refreshData = () => {
     const storedConversations = loadDemoConversations();
     const storedInventory = loadDemoInventory();
     const storedOrders = loadDemoOrders();
-    if (profile?.role === 'super_admin') {
+    if (['platform_owner', 'super_admin'].includes(profile?.role)) {
       setConversations(storedConversations);
       setInventory(storedInventory);
       setOrders(storedOrders);
@@ -131,7 +165,7 @@ const DemoDataProvider = ({ children }) => {
     const next = resetDemoConversations();
     setConversations(filterForProfile(next));
     setInventory(
-      profile?.role === 'super_admin'
+      ['platform_owner', 'super_admin'].includes(profile?.role)
         ? loadDemoInventory()
         : loadDemoInventory().filter(i => i.tenant_id === profile?.tenant_id)
     );
@@ -144,7 +178,10 @@ const DemoDataProvider = ({ children }) => {
         conversations,
         inventory,
         orders,
+        vendors,
         loading,
+        selectedVendorId,
+        setSelectedVendorId,
         addMessage,
         updateConversation,
         refreshData,
@@ -165,6 +202,8 @@ const SupabaseDataProvider = ({ children }) => {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [supabaseModule, setSupabaseModule] = useState(null);
+  const [selectedVendorId, setSelectedVendorId] = useState(null);
+  const [vendors, setVendors] = useState([]);
 
   useEffect(() => {
     import('../lib/supabase').then(mod => setSupabaseModule(mod));
@@ -189,7 +228,7 @@ const SupabaseDataProvider = ({ children }) => {
           event: '*',
           schema: 'public',
           table: 'conversations',
-          filter: profile.role === 'super_admin' ? undefined : `tenant_id=eq.${profile.tenant_id}`
+          filter: ['platform_owner', 'super_admin'].includes(profile.role) ? undefined : `tenant_id=eq.${profile.tenant_id}`
         },
         () => {
           fetchInitialData();
@@ -200,15 +239,21 @@ const SupabaseDataProvider = ({ children }) => {
     return () => {
       supabase.removeChannel(convSubscription);
     };
-  }, [profile, supabaseModule]);
+  }, [profile, supabaseModule, selectedVendorId]);
 
   const fetchInitialData = async () => {
     if (!supabaseModule) return;
     const { supabase } = supabaseModule;
     setLoading(true);
     try {
-      const tenantId = profile.tenant_id;
+      const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile.role);
+      const tenantId = isHigherAdmin ? selectedVendorId : profile.tenant_id;
       
+      if (isHigherAdmin) {
+        const { data: vendorData, error: vendorError } = await supabase.from('tenants').select('*');
+        if (!vendorError) setVendors(vendorData);
+      }
+
       let convQuery = supabase
         .from('conversations')
         .select(`
@@ -222,7 +267,7 @@ const SupabaseDataProvider = ({ children }) => {
         `)
         .order('last_message_at', { ascending: false });
 
-      if (profile.role !== 'super_admin') {
+      if (tenantId) {
         convQuery = convQuery.eq('tenant_id', tenantId);
       }
 
@@ -256,7 +301,7 @@ const SupabaseDataProvider = ({ children }) => {
       setConversations(transformedConvs);
 
       let invQuery = supabase.from('inventory').select('*');
-      if (profile.role !== 'super_admin') {
+      if (tenantId) {
         invQuery = invQuery.eq('tenant_id', tenantId);
       }
       const { data: invData, error: invError } = await invQuery;
@@ -322,7 +367,10 @@ const SupabaseDataProvider = ({ children }) => {
       conversations, 
       inventory, 
       orders: [],
+      vendors,
       loading,
+      selectedVendorId,
+      setSelectedVendorId,
       addMessage,
       updateConversation,
       refreshData: fetchInitialData

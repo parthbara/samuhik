@@ -1,8 +1,8 @@
-import { DEMO_CONVERSATIONS, DEMO_INVENTORY } from './mockData';
+import { DEMO_CONVERSATIONS, DEMO_INVENTORY, ALL_TENANTS } from './mockData';
 
-export const DEMO_CONVERSATIONS_KEY = 'samuhik_demo_conversations_v3';
-export const DEMO_INVENTORY_KEY = 'samuhik_demo_inventory_v3';
-export const DEMO_ORDERS_KEY = 'samuhik_demo_orders_v3';
+export const DEMO_CONVERSATIONS_KEY = 'samuhik_demo_conversations_v5';
+export const DEMO_INVENTORY_KEY = 'samuhik_demo_inventory_v5';
+export const DEMO_ORDERS_KEY = 'samuhik_demo_orders_v5';
 export const DEMO_SYNC_EVENT = 'samuhik-demo-sync';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -12,12 +12,18 @@ export function loadDemoConversations() {
     const stored = localStorage.getItem(DEMO_CONVERSATIONS_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed.some((conversation) => conversation.customerUserId)) return parsed;
+      return parsed.map(c => ({
+        ...c,
+        tenantName: ALL_TENANTS.find(t => t.id === c.tenant_id)?.name || 'Our Shop'
+      }));
     }
   } catch {
     // Fall through to seed data when localStorage is unavailable or corrupt.
   }
-  return clone(DEMO_CONVERSATIONS);
+  return clone(DEMO_CONVERSATIONS).map(c => ({
+    ...c,
+    tenantName: ALL_TENANTS.find(t => t.id === c.tenant_id)?.name || 'Our Shop'
+  }));
 }
 
 export function saveDemoConversations(conversations) {
@@ -71,8 +77,23 @@ export function mutateDemoConversations(updater) {
 }
 
 export function appendDemoMessage(conversationId, message, updates = {}) {
-  return mutateDemoConversations((current) =>
-    current.map((conversation) =>
+  return mutateDemoConversations((current) => {
+    const exists = current.find(c => c.id === conversationId);
+    if (!exists) {
+      // Create new conversation if it doesn't exist
+      const newConv = {
+        id: conversationId,
+        customerName: 'Guest User',
+        messages: [message],
+        time: message.time,
+        tenant_id: 'tenant-001',
+        platform: 'whatsapp',
+        unread: 1,
+        ...updates
+      };
+      return [newConv, ...current];
+    }
+    return current.map((conversation) =>
       conversation.id === conversationId
         ? {
             ...conversation,
@@ -81,8 +102,8 @@ export function appendDemoMessage(conversationId, message, updates = {}) {
             time: message.time,
           }
         : conversation
-    )
-  );
+    );
+  });
 }
 
 export function updateDemoConversation(conversationId, updates) {

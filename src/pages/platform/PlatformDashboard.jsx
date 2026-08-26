@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { ALL_TENANTS } from '../../lib/mockData';
 import { DEMO_MODE } from '../../lib/config';
+import { useData } from '../../contexts/DataContext';
 import { useToast } from '../../contexts/ToastContext';
 import { 
   Building2, 
@@ -69,9 +71,38 @@ const buildTenantInventory = (tenant) => [
   },
 ];
 
+const VariableInsert = ({ onInsert }) => {
+  const vars = [
+    { label: 'Shop Name', value: '{{shopName}}' },
+    { label: 'Owner', value: '{{shopOwner}}' },
+    { label: 'Contact', value: '{{contactNumber}}' },
+    { label: 'Inventory', value: '{{inventory}}' },
+    { label: 'Recent Orders', value: '{{orders}}' },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {vars.map(v => (
+        <button
+          key={v.value}
+          type="button"
+          onClick={() => onInsert(v.value)}
+          className="text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-surface border border-subtle hover:border-accent hover:text-accent transition-all"
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+};
+
 const SuperAdminDashboard = () => {
-  const [tenants, setTenants] = useState([]);
+  const { profile } = useAuth();
+  const { vendors, selectedVendorId, setSelectedVendorId } = useData();
+  const isPlatformOwner = profile?.role === 'platform_owner';
+
   const [loading, setLoading] = useState(true);
+  const [tenants, setTenants] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTenantName, setNewTenantName] = useState('');
   const [tenantBrainSettings, setTenantBrainSettings] = useState({});
@@ -79,14 +110,29 @@ const SuperAdminDashboard = () => {
   const [messageTenantId, setMessageTenantId] = useState('');
   const [inventoryTenantId, setInventoryTenantId] = useState('');
   const { addToast } = useToast();
+
+  const getPersistentSetting = (tenantId, key, fallback) => {
+    return localStorage.getItem(`samuhik_${key}_${tenantId}`) || fallback;
+  };
   
-  const [platformEngine, setPlatformEngine] = useState({
-    globalSystemPrompt: 'Always answer in Romanized Nepali unless the customer writes in English. Provide clear, concise answers. Escalate angry customers, refund requests, or sensitive queries immediately to a human agent.',
-    webhookReceiverUrl: '/.netlify/functions/gemini',
-    defaultModel: 'gemini-2.5-flash',
-    aiEnabledByDefault: true,
-    allowTenantWebSearch: true,
-    requireHumanForPayments: true,
+  // Local vendors for the table (can be filtered by global switcher)
+  const visibleVendors = useMemo(() => {
+    if (!selectedVendorId) return tenants;
+    return tenants.filter(t => t.id === selectedVendorId);
+  }, [selectedVendorId, tenants]);
+
+  const [platformEngine, setPlatformEngine] = useState(() => {
+    const saved = localStorage.getItem('samuhik_platform_engine');
+    return saved ? JSON.parse(saved) : {
+      globalSystemPrompt: 'Always answer in Romanized Nepali unless the customer writes in English. Provide clear, concise answers. Escalate angry customers, refund requests, or sensitive queries immediately to a human agent.',
+      webhookReceiverUrl: '/.netlify/functions/gemini',
+      defaultModel: 'gemini-2.5-flash',
+      temperature: 0.25,
+      maxTokens: 800,
+      aiEnabledByDefault: true,
+      allowTenantWebSearch: true,
+      requireHumanForPayments: true,
+    };
   });
 
   useEffect(() => {
@@ -106,7 +152,9 @@ const SuperAdminDashboard = () => {
         demoTenants.reduce((settings, tenant) => ({
           ...settings,
           [tenant.id]: {
-            storeContextPrompt: tenant.store_context_prompt || '',
+            storeContextPrompt: getPersistentSetting(tenant.id, 'system_prompt', tenant.store_context_prompt || ''),
+            shopOwner: getPersistentSetting(tenant.id, 'shop_owner', 'Ram Shrestha'),
+            contactNumber: getPersistentSetting(tenant.id, 'contact_number', '+977-98XXXXXXXX'),
             webSearchEnabled: Boolean(tenant.web_search_enabled),
             enabledPlatforms: tenant.enabled_platforms || ['whatsapp'],
             aiRoutingMode: tenant.ai_routing_mode || 'ai_first',
@@ -216,6 +264,10 @@ const SuperAdminDashboard = () => {
         created_at: new Date().toISOString(),
         users: [{ count: 0 }],
       };
+      
+      const stored = JSON.parse(localStorage.getItem('samuhik_demo_vendors') || '[]');
+      localStorage.setItem('samuhik_demo_vendors', JSON.stringify([newTenant, ...stored]));
+      
       setTenants(prev => [newTenant, ...prev]);
       setTenantBrainSettings(prev => ({
         ...prev,
@@ -233,6 +285,9 @@ const SuperAdminDashboard = () => {
       setNewTenantName('');
       setNewTenantPlatforms(['whatsapp']);
       addToast('New store created successfully', 'success');
+      
+      // Trigger a sync event for the sidebar
+      window.dispatchEvent(new CustomEvent('samuhik_sync_vendors'));
       return;
     }
 
@@ -259,32 +314,43 @@ const SuperAdminDashboard = () => {
   };
 
   const handleSavePlatformEngine = () => {
+    localStorage.setItem('samuhik_platform_engine', JSON.stringify(platformEngine));
     addToast('Platform Engine Settings Saved', 'success');
   };
   
-  const handleSaveBrainSettings = () => {
-    addToast('Tenant Brain Settings Saved', 'success');
+  const handleSaveBrainSettings = (tenantId) => {
+    const settings = tenantBrainSettings[tenantId];
+    if (settings) {
+      localStorage.setItem(`samuhik_system_prompt_${tenantId}`, settings.storeContextPrompt);
+      localStorage.setItem(`samuhik_shop_owner_${tenantId}`, settings.shopOwner || '');
+      localStorage.setItem(`samuhik_contact_number_${tenantId}`, settings.contactNumber || '');
+    }
+    addToast('Tenant Brain Settings Saved & Persisted', 'success');
   };
 
   return (
     <div className="p-8 max-w-7xl mx-auto relative">
       <div className="relative z-10 flex justify-between items-center mb-8">
         <div>
-          <h2 className="text-3xl font-extrabold text-primary tracking-tight">Platform Overview</h2>
-          <p className="text-secondary text-sm mt-1 font-medium">Manage all business customers and system health.</p>
+          <h2 className="text-3xl font-extrabold text-primary tracking-tight">
+            {isPlatformOwner ? 'Platform Owner Command Center' : 'Super Admin Dashboard'}
+          </h2>
+          <p className="text-secondary text-sm mt-1 font-medium">Manage all business vendors and global system state.</p>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-accent hover:bg-accent-dim text-deep px-4 py-2 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(0,212,170,0.3)] hover:shadow-[0_0_20px_rgba(0,212,170,0.5)]"
-        >
-          <Plus className="w-4 h-4" />
-          Add New Store
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-accent hover:bg-accent-dim text-deep px-4 py-2 rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(0,212,170,0.3)] hover:shadow-[0_0_20px_rgba(0,212,170,0.5)]"
+          >
+            <Plus className="w-4 h-4" />
+            Add New Store
+          </button>
+        </div>
       </div>
 
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="glass-card p-6 rounded-2xl shadow-lg stat-card">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Total Stores</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-2">Total Vendors</p>
           <p className="text-4xl font-black text-primary">{tenants.length}</p>
         </div>
         <div className="glass-card p-6 rounded-2xl shadow-lg stat-card relative overflow-hidden">
@@ -307,13 +373,18 @@ const SuperAdminDashboard = () => {
         <SectionCard icon={Server} title="Platform Engine Controls" eyebrow="Super Admin master settings" tone="indigo">
           <div className="grid gap-5 lg:grid-cols-2">
             <label className="block">
-              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Default Model</span>
-              <input
+              <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Default Model (Free Tier Only)</span>
+              <select
                 value={platformEngine.defaultModel}
                 onChange={(event) => setPlatformEngine((current) => ({ ...current, defaultModel: event.target.value }))}
-                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
-                placeholder="gemini-2.5-flash"
-              />
+                className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all appearance-none"
+              >
+                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview</option>
+                <option value="gemma-4-31b-it">gemma-4-31b-it</option>
+                <option value="gemma-4-26b-a4b-it">gemma-4-26b-a4b-it</option>
+              </select>
             </label>
             <label className="block">
               <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">AI Function Route</span>
@@ -324,6 +395,34 @@ const SuperAdminDashboard = () => {
                 placeholder="/.netlify/functions/gemini"
               />
             </label>
+            <div className="grid grid-cols-2 gap-5 lg:col-span-2">
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global Temperature</span>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={platformEngine.temperature || 0.25}
+                    onChange={(event) => setPlatformEngine((current) => ({ ...current, temperature: parseFloat(event.target.value) }))}
+                    className="flex-1 accent-accent"
+                  />
+                  <span className="text-xs font-mono text-primary bg-surface border border-subtle px-2 py-1 rounded-lg">
+                    {platformEngine.temperature || 0.25}
+                  </span>
+                </div>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global Max Tokens</span>
+                <input
+                  type="number"
+                  value={platformEngine.maxTokens || 800}
+                  onChange={(event) => setPlatformEngine((current) => ({ ...current, maxTokens: parseInt(event.target.value) }))}
+                  className="w-full rounded-xl border border-subtle bg-surface px-4 py-3 font-mono text-sm outline-none focus-ring text-primary transition-all"
+                />
+              </label>
+            </div>
             <label className="block lg:col-span-2">
               <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">Global System Prompt</span>
               <textarea
@@ -368,10 +467,10 @@ const SuperAdminDashboard = () => {
       </div>
 
       <div className="relative z-10 mt-8 grid gap-6 xl:grid-cols-2">
-        <SectionCard icon={ClipboardList} title="Tenant Message Segregation" eyebrow="Omnichannel queue audit" tone="blue">
+        <SectionCard icon={ClipboardList} title="Vendor Message Segregation" eyebrow="Omnichannel queue audit" tone="blue">
           <div className="mb-4">
             <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
-              Inspect tenant messages
+              Inspect vendor messages
             </label>
             <select
               value={messageTenantId}
@@ -403,10 +502,10 @@ const SuperAdminDashboard = () => {
           </div>
         </SectionCard>
 
-        <SectionCard icon={PackageSearch} title="Tenant Stock & Inventory" eyebrow="POS audit view" tone="amber">
+        <SectionCard icon={PackageSearch} title="Vendor Stock & Inventory" eyebrow="POS audit view" tone="amber">
           <div className="mb-4">
             <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
-              Inspect tenant inventory
+              Inspect vendor inventory
             </label>
             <select
               value={inventoryTenantId}
@@ -472,7 +571,7 @@ const SuperAdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-subtle">
-              {tenants.map((t, idx) => (
+              {visibleVendors.map((t, idx) => (
                 <tr key={t.id} className={`transition-colors hover:bg-hover/80 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-surface/30'}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -533,15 +632,27 @@ const SuperAdminDashboard = () => {
         <div className="px-6 py-4 border-b border-subtle bg-surface/50 flex items-center justify-between backdrop-blur-md">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-indigo-400" />
-            <h3 className="font-extrabold text-primary">Tenant Brain Controls</h3>
+            <h3 className="font-extrabold text-primary">Vendor Brain Controls</h3>
           </div>
-          <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400 glow-indigo">
-            Super Admin
-          </span>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedVendorId || ''}
+              onChange={(e) => setSelectedVendorId(e.target.value || null)}
+              className="bg-surface border border-subtle text-primary px-3 py-1.5 rounded-xl font-bold text-[11px] outline-none focus-ring transition-all"
+            >
+              <option value="">All Vendors</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+            <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-indigo-400 glow-indigo">
+              Super Admin
+            </span>
+          </div>
         </div>
 
         <div className="divide-y divide-subtle">
-          {tenants.map((tenant) => {
+          {visibleVendors.map((tenant) => {
             const settings = tenantBrainSettings[tenant.id] || {
               storeContextPrompt: '',
               webSearchEnabled: false,
@@ -569,6 +680,32 @@ const SuperAdminDashboard = () => {
                   </div>
                 </div>
                 <div className="mb-4">
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                        Shop Owner
+                      </span>
+                      <input
+                        type="text"
+                        value={settings.shopOwner || ''}
+                        onChange={(event) => updateTenantBrainSetting(tenant.id, 'shopOwner', event.target.value)}
+                        className="w-full rounded-xl border border-subtle bg-surface px-4 py-2.5 text-sm text-primary outline-none focus-ring"
+                        placeholder="Owner name"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted">
+                        Support Contact
+                      </span>
+                      <input
+                        type="text"
+                        value={settings.contactNumber || ''}
+                        onChange={(event) => updateTenantBrainSetting(tenant.id, 'contactNumber', event.target.value)}
+                        className="w-full rounded-xl border border-subtle bg-surface px-4 py-2.5 text-sm text-primary outline-none focus-ring"
+                        placeholder="Contact number"
+                      />
+                    </label>
+                  </div>
                   <div className="mb-2 flex items-center gap-2">
                     <Layers3 className="h-4 w-4 text-muted" />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
@@ -601,6 +738,9 @@ const SuperAdminDashboard = () => {
                   <span className="block text-[10px] font-bold uppercase tracking-widest text-muted mb-1.5">
                     Store Context Prompt
                   </span>
+                  <VariableInsert onInsert={(v) => {
+                    updateTenantBrainSetting(tenant.id, 'storeContextPrompt', (settings.storeContextPrompt || '') + ' ' + v);
+                  }} />
                   <textarea
                     rows={4}
                     value={settings.storeContextPrompt}
@@ -682,10 +822,10 @@ const SuperAdminDashboard = () => {
                 <div className="mt-4 flex justify-end">
                   <button
                     type="button"
-                    onClick={handleSaveBrainSettings}
-                    className="rounded-xl bg-surface border border-subtle px-4 py-2 text-sm font-bold text-primary shadow-lg hover:bg-hover transition-colors"
+                    onClick={() => handleSaveBrainSettings(tenant.id)}
+                    className="rounded-xl bg-accent text-deep px-6 py-2.5 text-sm font-bold shadow-lg hover:bg-accent-dim transition-all"
                   >
-                    Save Brain Settings
+                    Save & Deploy to Store
                   </button>
                 </div>
               </form>
@@ -699,7 +839,49 @@ const SuperAdminDashboard = () => {
         </div>
       </section>
 
-      {/* Add Modal */}
+      <div className="relative z-10 mt-8">
+        <SectionCard icon={Database} title="System Health & Data" eyebrow="Maintenance & Global State" tone="emerald">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="p-4 rounded-2xl bg-surface border border-subtle">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">API Latency (Global)</p>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-black text-primary">240ms</p>
+                <span className="text-[10px] font-bold text-accent mb-1">Optimized</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-2xl bg-surface border border-subtle">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Success Rate</p>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-black text-primary">99.8%</p>
+                <span className="text-[10px] font-bold text-accent mb-1">Healthy</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-2xl bg-surface border border-subtle">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted mb-3">Rate Limit Status</p>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-black text-amber-400">Stable</p>
+                <span className="text-[10px] font-bold text-muted mb-1">Free Tier</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-4">
+            <button 
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="px-5 py-2.5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 transition-all"
+            >
+              Reset All Platform Data
+            </button>
+            <button 
+              className="px-5 py-2.5 rounded-xl border border-subtle bg-surface text-secondary text-xs font-bold uppercase tracking-widest hover:bg-hover hover:text-primary transition-all"
+            >
+              Sync Inventory Globally
+            </button>
+          </div>
+        </SectionCard>
+      </div>
       {showAddModal && (
         <div className="fixed inset-0 bg-deep/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-elevated border border-subtle rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slide-up">
