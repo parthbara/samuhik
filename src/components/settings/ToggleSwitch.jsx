@@ -12,14 +12,14 @@ const ToggleSwitch = ({ checked, onChange, label, description, disabled = false 
       type="button"
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
-      className={`relative inline-flex h-5 w-10 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-all ${
-        checked ? 'bg-accent glow-accent' : 'bg-surface border border-subtle'
+      className={`relative inline-flex h-5 w-10 shrink-0 items-center overflow-hidden rounded-full p-0.5 transition-all duration-200 ${
+        checked ? 'bg-emerald-500' : 'bg-zinc-600 border border-zinc-500'
       }`}
       aria-pressed={checked}
       aria-label={label || 'Toggle setting'}
     >
       <span
-        className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+        className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
           checked ? 'translate-x-5' : 'translate-x-0'
         }`}
       />

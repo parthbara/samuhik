@@ -12,7 +12,7 @@ const SectionCard = ({ icon: Icon, title, eyebrow, children, action, tone = 'ind
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-subtle glass-card shadow-2xl">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
       
       <div className="relative z-10 flex items-center justify-between gap-4 border-b border-subtle bg-surface/50 backdrop-blur-md px-6 py-4">
         <div className="flex min-w-0 items-center gap-3">

@@ -2,8 +2,17 @@
   command = "npm run build"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+  # esbuild is required for ESM (import/export) syntax in function files.
+  # Without this, Netlify's default NFT bundler fails on ESM even when
+  # the root package.json has "type": "module".
+  node_bundler = "esbuild"
+
 [build.environment]
   NODE_VERSION = "22"
+  # Set VITE_DEMO_MODE=false in Netlify dashboard for production.
+  # Hardcoding it here would override the dashboard, so we leave it unset.
 
 [[redirects]]
   from = "/*"

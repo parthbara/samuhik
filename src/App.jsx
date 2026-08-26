@@ -6,11 +6,12 @@ import { ToastProvider } from './contexts/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
 import Inbox from './pages/Inbox';
 import Inventory from './pages/Inventory';
 import AdminConfig from './pages/AdminConfig';
 import UserManagement from './pages/UserManagement';
-import VendorDashboard from './pages/vendor/VendorDashboard';
+import PlatformDashboard from './pages/platform/PlatformDashboard';
 import Orders from './pages/Orders';
 import CustomerSimulator from './pages/CustomerSimulator';
 
@@ -19,7 +20,7 @@ const RootRedirect = () => {
   if (loading) return null;
   if (!profile) return <Navigate to="/login" replace />;
   
-  if (profile.role === 'super_admin') return <Navigate to="/vendor" replace />;
+  if (['platform_owner', 'super_admin'].includes(profile.role)) return <Navigate to="/platform" replace />;
   if (profile.role === 'customer') return <Navigate to="/customer" replace />;
   if (profile.role === 'admin') return <Navigate to="/admin/config" replace />;
   return <Navigate to="/inbox" replace />;
@@ -33,6 +34,12 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/demo" element={<CustomerSimulator />} />
+              <Route path="/simulate" element={
+                <ProtectedRoute requiredRole={['admin', 'agent', 'super_admin', 'platform_owner']}>
+                  <CustomerSimulator />
+                </ProtectedRoute>
+              } />
               <Route path="/customer" element={
                 <ProtectedRoute requiredRole="customer">
                   <CustomerSimulator />
@@ -70,16 +77,17 @@ function App() {
                   <Route index element={<Navigate to="config" replace />} />
                 </Route>
 
-                {/* Vendor Routes */}
-                <Route path="/vendor" element={
-                  <ProtectedRoute requiredRole="super_admin">
-                    <VendorDashboard />
+                {/* Platform Routes */}
+                <Route path="/platform" element={
+                  <ProtectedRoute requiredRole={['platform_owner', 'super_admin']}>
+                    <PlatformDashboard />
                   </ProtectedRoute>
                 } />
 
               </Route>
 
-              <Route path="/" element={<RootRedirect />} />
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/dashboard" element={<RootRedirect />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>

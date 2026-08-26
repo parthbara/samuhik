@@ -93,11 +93,9 @@ const SortableHeader = ({ label, sortKey, currentSort, onSort }) => {
 
 const Orders = () => {
   const { profile } = useAuth();
-  const { orders } = useData();
-  const isSuperAdmin = profile?.role === 'super_admin';
-  const tenants = isSuperAdmin ? ALL_TENANTS : [];
+  const { orders, vendors, selectedVendorId, setSelectedVendorId } = useData();
+  const isHigherAdmin = ['platform_owner', 'super_admin'].includes(profile?.role);
 
-  const [tenantFilter, setTenantFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [channelFilter, setChannelFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -113,15 +111,15 @@ const Orders = () => {
 
   const baseRows = useMemo(() => {
     const rows = [...(orders || []), ...ORDER_ROWS];
-    if (!isSuperAdmin && profile?.tenant_id) {
+    if (!isHigherAdmin && profile?.tenant_id) {
       return rows.filter((r) => r.tenant_id === profile.tenant_id);
     }
     return rows;
-  }, [isSuperAdmin, profile?.tenant_id, orders]);
+  }, [isHigherAdmin, profile?.tenant_id, orders]);
 
   const filteredRows = useMemo(() => {
     let rows = baseRows.filter((row) => {
-      if (tenantFilter !== 'all' && row.tenant_id !== tenantFilter) return false;
+      if (isHigherAdmin && selectedVendorId && row.tenant_id !== selectedVendorId) return false;
       if (statusFilter !== 'all' && row.status !== statusFilter) return false;
       if (channelFilter !== 'all' && row.channel !== channelFilter) return false;
       if (sourceFilter !== 'all' && row.order_source !== sourceFilter) return false;
@@ -144,7 +142,7 @@ const Orders = () => {
     });
 
     return rows;
-  }, [baseRows, tenantFilter, statusFilter, channelFilter, sourceFilter, query, sort]);
+  }, [baseRows, isHigherAdmin, selectedVendorId, statusFilter, channelFilter, sourceFilter, query, sort]);
 
   const totalRevenue = filteredRows.reduce((sum, r) => sum + (r.unit_price * r.quantity), 0);
   const aiCount = filteredRows.filter((r) => r.order_source === 'ai_generated').length;
@@ -190,12 +188,12 @@ const Orders = () => {
 
   return (
     <div className="mx-auto w-full max-w-[1600px] p-6 lg:p-8 relative">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
+      <div className="absolute inset-0  opacity-[0.02] mix-blend-overlay pointer-events-none z-0"></div>
       
       <div className="relative z-10 mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-accent">
-            {isSuperAdmin ? 'Super Admin' : 'Store Admin'}
+            {isHigherAdmin ? 'Super Admin' : 'Store Admin'}
           </p>
           <h2 className="mt-1 text-3xl font-extrabold text-primary tracking-tight">Orders & Ticket Spreadsheet</h2>
           <p className="mt-1 text-sm text-secondary font-medium">
@@ -236,17 +234,17 @@ const Orders = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {tenants.length > 0 && (
+            {isHigherAdmin && (
               <label className="relative">
                 <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <select
-                  value={tenantFilter}
-                  onChange={(e) => setTenantFilter(e.target.value)}
+                  value={selectedVendorId || ''}
+                  onChange={(e) => setSelectedVendorId(e.target.value || null)}
                   className="h-10 rounded-xl border border-subtle bg-surface pl-9 pr-8 text-sm font-semibold outline-none focus-ring text-primary transition-all"
                 >
-                  <option value="all">All stores</option>
-                  {tenants.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  <option value="">All Stores</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.id}>{v.name}</option>
                   ))}
                 </select>
               </label>
@@ -312,7 +310,7 @@ const Orders = () => {
               <tr>
                 <SortableHeader label="Ticket No" sortKey="ticket_no" currentSort={sort} onSort={handleSort} />
                 <SortableHeader label="Order" sortKey="order_id" currentSort={sort} onSort={handleSort} />
-                {isSuperAdmin && <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Store</th>}
+                {isHigherAdmin && <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Store</th>}
                 <SortableHeader label="Customer" sortKey="customer" currentSort={sort} onSort={handleSort} />
                 <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Contact</th>
                 <th className="border-b border-subtle px-4 py-3 font-bold text-[11px] uppercase tracking-widest text-muted">Location</th>
@@ -332,7 +330,7 @@ const Orders = () => {
                 <tr key={row.ticket_no} className={`transition-colors hover:bg-hover/80 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-surface/30'}`}>
                   <td className="px-4 py-3.5 font-mono text-xs font-bold text-accent">{row.ticket_no}</td>
                   <td className="px-4 py-3.5 font-mono text-xs text-secondary">{row.order_id}</td>
-                  {isSuperAdmin && (
+                  {isHigherAdmin && (
                     <td className="px-4 py-3.5">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-surface border border-subtle px-2.5 py-1 text-[10px] font-bold text-primary">
                         <Building2 className="h-3 w-3 text-secondary" />
