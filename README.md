@@ -34,3 +34,7 @@ Do not expose Gemini keys with a `VITE_` prefix.
 The included `netlify.toml` builds with `npm run build` and publishes `dist`.
 
 The demo intentionally does not include SQL migrations or Supabase backend setup instructions. It must run against the existing Supabase schema and keys.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
